@@ -1,0 +1,185 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { paymentAPI } from '@/lib/api';
+import useAuthStore from '@/store/authStore';
+import { formatCurrency, formatDateTime } from '@/lib/utils';
+
+function AdminPaymentsContent() {
+    const router = useRouter();
+    const { user, logout } = useAuthStore();
+    const [payments, setPayments] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const [paymentsRes, statsRes] = await Promise.all([
+                paymentAPI.getHistory({}),
+                paymentAPI.getStats(),
+            ]);
+            setPayments(paymentsRes.data.data.payments || []);
+            setStats(statsRes.data.data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        await logout();
+        router.push('/');
+    };
+
+    return (
+        <div className="min-h-screen bg-background dark:bg-gray-950">
+            {/* Header */}
+            <div className="bg-white shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            AS ACADEMY - Admin
+                        </h1>
+                        <div className="flex items-center space-x-4">
+                            <span className="text-gray-700">Admin: {user?.name}</span>
+                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="bg-white border-b">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <nav className="flex space-x-8">
+                        <Link href="/admin/dashboard" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
+                            Dashboard
+                        </Link>
+                        <Link href="/admin/users" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
+                            Users
+                        </Link>
+                        <Link href="/admin/courses" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
+                            Courses
+                        </Link>
+                        <Link href="/admin/payments" className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium">
+                            Payments
+                        </Link>
+                    </nav>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Stats */}
+                {stats && (
+                    <div className="grid md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm text-gray-600 mb-1">Total Revenue</div>
+                            <div className="text-3xl font-bold text-green-600">{formatCurrency(stats.totalRevenue || 0)}</div>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm text-gray-600 mb-1">Total Payments</div>
+                            <div className="text-3xl font-bold text-blue-600">{stats.totalPayments || 0}</div>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm text-gray-600 mb-1">Successful</div>
+                            <div className="text-3xl font-bold text-green-600">{stats.successfulPayments || 0}</div>
+                        </div>
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <div className="text-sm text-gray-600 mb-1">Failed</div>
+                            <div className="text-3xl font-bold text-red-600">{stats.failedPayments || 0}</div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quick Action */}
+                <div className="bg-white rounded-lg shadow p-6 mb-8">
+                    <Link
+                        href="/admin/payments/offline"
+                        className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 inline-block"
+                    >
+                        + Create Offline Enrollment
+                    </Link>
+                </div>
+
+                {/* Payments Table */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="px-6 py-4 border-b">
+                        <h2 className="text-xl font-bold text-gray-900">Recent Payments</h2>
+                    </div>
+                    {loading ? (
+                        <div className="flex justify-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {payments.map((payment) => (
+                                        <tr key={payment.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{payment.users?.name}</div>
+                                                <div className="text-sm text-gray-500">{payment.users?.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm text-gray-900">{payment.courses?.title}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{formatCurrency(payment.amount)}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 py-1 text-xs rounded capitalize ${payment.payment_method === 'razorpay' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                                    }`}>
+                                                    {payment.payment_method}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 py-1 text-xs rounded ${payment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                        payment.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                    }`}>
+                                                    {payment.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                {formatDateTime(payment.created_at)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default function AdminPaymentsPage() {
+    return (
+        <ProtectedRoute allowedRoles={['admin']}>
+            <AdminPaymentsContent />
+        </ProtectedRoute>
+    );
+}
