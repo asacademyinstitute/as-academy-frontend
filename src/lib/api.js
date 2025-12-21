@@ -277,3 +277,8 @@ export const couponAPI = {
     getStats: (id) => api.get(`/coupons/${id}/stats`),
 };
 
+
+// Lecture API
+export const lectureAPI = {
+    transfer: (data) => api.post('/lectures/transfer', data),
+};

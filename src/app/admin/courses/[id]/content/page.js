@@ -113,19 +113,15 @@ function AdminCourseContentContent() {
 
         setTransferring(true);
         try {
-            // Note: This would require a backend API endpoint
-            // For now, we'll show a message that this feature needs backend support
-            alert('Transfer functionality requires backend API implementation. Please contact the developer to add the transfer endpoint.');
+            await lectureAPI.transfer({
+                lecture_ids: selectedLectures,
+                target_chapter_id: targetCourseId
+            });
 
-            // TODO: Implement when backend API is ready
-            // await lectureAPI.transfer({
-            //     lecture_ids: selectedLectures,
-            //     target_course_id: targetCourseId
-            // });
-
-            // setSelectedLectures([]);
-            // setTargetCourseId('');
-            // fetchData();
+            alert('Lectures transferred successfully!');
+            setSelectedLectures([]);
+            setTargetCourseId('');
+            fetchData();
         } catch (error) {
             console.error('Error transferring lectures:', error);
             alert('Failed to transfer lectures');
