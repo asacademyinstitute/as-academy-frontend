@@ -20,6 +20,7 @@ export default function CourseDetailPage() {
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
     const [contentExpanded, setContentExpanded] = useState(false);
+    const [descriptionExpanded, setDescriptionExpanded] = useState(false);
 
     useEffect(() => {
         fetchCourse();
@@ -182,7 +183,19 @@ export default function CourseDetailPage() {
                         <div className="lg:col-span-2">
                             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-8">
                                 <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{course.title}</h1>
-                                <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">{course.description}</p>
+                                <div className="mb-6">
+                                    <p className={`text-gray-600 dark:text-gray-400 text-lg ${!descriptionExpanded ? 'line-clamp-3' : ''}`}>
+                                        {course.description}
+                                    </p>
+                                    {course.description && course.description.length > 150 && (
+                                        <button
+                                            onClick={() => setDescriptionExpanded(!descriptionExpanded)}
+                                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm mt-2 font-medium"
+                                        >
+                                            {descriptionExpanded ? 'Show less' : 'Read more'}
+                                        </button>
+                                    )}
+                                </div>
 
                                 {course.users && (
                                     <div className="mb-6">
