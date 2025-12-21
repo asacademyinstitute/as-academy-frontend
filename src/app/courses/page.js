@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { coursesAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import useAuthStore from '@/store/authStore';
-import { DashboardNav } from '@/components/ui/navigation';
+import { DashboardNav, ResponsiveNav } from '@/components/ui/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
@@ -71,24 +71,25 @@ export default function CoursesPage() {
                     actions={<ThemeToggle />}
                 />
             ) : (
-                <div className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-                        <div className="flex justify-between items-center">
-                            <Link href="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                AS ACADEMY
+                <ResponsiveNav
+                    brand={{ name: 'AS ACADEMY', href: '/' }}
+                    items={[
+                        { label: 'Home', href: '/' },
+                        { label: 'Courses', href: '/courses' },
+                        { label: 'Login', href: '/login' },
+                    ]}
+                    actions={
+                        <>
+                            <ThemeToggle />
+                            <Link
+                                href="/signup"
+                                className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
+                            >
+                                Sign Up
                             </Link>
-                            <div className="flex items-center space-x-3 md:space-x-4">
-                                <ThemeToggle />
-                                <Link href="/login" className="text-sm md:text-base text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium">
-                                    Login
-                                </Link>
-                                <Link href="/signup" className="bg-blue-600 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base font-medium transition-colors">
-                                    Sign Up
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        </>
+                    }
+                />
             )}
 
             {/* Content */}
