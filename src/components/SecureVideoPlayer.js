@@ -101,7 +101,7 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
             ref={containerRef}
             className="relative bg-black"
             onContextMenu={handleContextMenu}
-            style={{ userSelect: 'none' }}
+            style={{ userSelect: 'none', width: '100%', height: isFullscreen ? '100vh' : 'auto' }}
         >
             {/* Video Element */}
             <video
@@ -110,28 +110,30 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
                 controls
                 controlsList="nodownload"
                 disablePictureInPicture
-                className="w-full aspect-video"
+                className="w-full h-full"
+                style={{ objectFit: 'contain' }}
                 onContextMenu={handleContextMenu}
             >
                 Your browser does not support the video tag.
             </video>
 
-            {/* Watermark Overlay - Refined and Professional */}
+            {/* Watermark Overlay - Always visible in both normal and fullscreen */}
             <div
                 className="absolute pointer-events-none transition-all duration-500"
                 style={{
                     left: `${watermarkPosition.x}%`,
                     top: `${watermarkPosition.y}%`,
-                    zIndex: 9999,
+                    zIndex: 2147483647, // Maximum z-index to ensure it's always on top
                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
                     color: 'rgba(255, 255, 255, 0.9)',
-                    padding: '4px 8px',
+                    padding: isFullscreen ? '8px 16px' : '4px 8px',
                     borderRadius: '3px',
-                    fontSize: '12px',
+                    fontSize: isFullscreen ? '16px' : '12px',
                     fontWeight: '600',
                     textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
                     whiteSpace: 'nowrap',
-                    opacity: 0.35
+                    opacity: 0.35,
+                    position: 'fixed' // Use fixed positioning for fullscreen
                 }}
             >
                 {watermarkText}
