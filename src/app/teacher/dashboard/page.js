@@ -54,7 +54,7 @@ function TeacherDashboardContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/teacher/dashboard' }}
@@ -69,23 +69,23 @@ function TeacherDashboardContent() {
                 {/* Stats */}
                 {stats && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">My Courses</div>
                             <div className="text-2xl md:text-3xl font-bold text-primary">{courses.length}</div>
                         </div>
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Total Students</div>
-                            <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-500">{stats.totalStudents || 0}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-green-600">{stats.totalStudents || 0}</div>
                         </div>
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Total Content</div>
-                            <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-500">{stats.totalLectures || 0}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-purple-600">{stats.totalLectures || 0}</div>
                         </div>
                     </div>
                 )}
 
                 {/* Courses */}
-                <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <h2 className="text-xl md:text-2xl font-bold text-foreground">My Courses</h2>
                         <Link
@@ -103,7 +103,7 @@ function TeacherDashboardContent() {
                     ) : courses.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {courses.map((course) => (
-                                <div key={course.id} className="border border-border rounded-lg overflow-hidden hover:shadow-medium transition-all hover-lift bg-card dark:bg-gray-900">
+                                <div key={course.id} className="border border-border rounded-lg overflow-hidden hover:shadow-medium transition-all hover-lift bg-card">
                                     <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                         <span className="text-white text-4xl">📚</span>
                                     </div>
@@ -112,8 +112,8 @@ function TeacherDashboardContent() {
                                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{course.description}</p>
                                         <div className="flex justify-between items-center">
                                             <span className={`px-2 py-1 text-xs rounded ${course.status === 'active'
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {course.status}
                                             </span>

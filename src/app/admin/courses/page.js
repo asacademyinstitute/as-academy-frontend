@@ -57,14 +57,14 @@ function AdminCoursesContent() {
     });
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header with Actions */}
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Courses</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">All Courses</h2>
                     <Link
                         href="/admin/courses/create"
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -160,7 +160,7 @@ function AdminCoursesContent() {
                                                         />
                                                     )}
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        <div className="text-sm font-medium text-gray-900">
                                                             {course.title}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
@@ -170,13 +170,13 @@ function AdminCoursesContent() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-white">{course.category}</div>
+                                                <div className="text-sm text-gray-900">{course.category}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-white">₹{course.price}</div>
+                                                <div className="text-sm text-gray-900">₹{course.price}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-white">{course.duration} days</div>
+                                                <div className="text-sm text-gray-900">{course.duration} days</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
@@ -192,13 +192,13 @@ function AdminCoursesContent() {
                                                 <div className="flex flex-col sm:flex-row gap-2">
                                                     <Link
                                                         href={`/admin/courses/${course.id}/content`}
-                                                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                        className="text-green-600 hover:text-green-900"
                                                     >
                                                         View Content
                                                     </Link>
                                                     <Link
                                                         href={`/admin/courses/${course.id}`}
-                                                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                                        className="text-blue-600 hover:text-blue-900"
                                                     >
                                                         Edit
                                                     </Link>

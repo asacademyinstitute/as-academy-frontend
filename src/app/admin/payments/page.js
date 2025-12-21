@@ -41,7 +41,7 @@ function AdminPaymentsContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
@@ -81,7 +81,7 @@ function AdminPaymentsContent() {
                 {/* Payments Table */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="px-6 py-4 border-b">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Payments</h2>
+                        <h2 className="text-xl font-bold text-gray-900">Recent Payments</h2>
                     </div>
                     {loading ? (
                         <div className="flex justify-center py-12">
@@ -104,14 +104,14 @@ function AdminPaymentsContent() {
                                     {payments.map((payment) => (
                                         <tr key={payment.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{payment.users?.name}</div>
+                                                <div className="text-sm font-medium text-gray-900">{payment.users?.name}</div>
                                                 <div className="text-sm text-gray-500">{payment.users?.email}</div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="text-sm text-gray-900 dark:text-white">{payment.courses?.title}</div>
+                                                <div className="text-sm text-gray-900">{payment.courses?.title}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{formatCurrency(payment.amount)}</div>
+                                                <div className="text-sm font-medium text-gray-900">{formatCurrency(payment.amount)}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded capitalize ${payment.payment_method === 'razorpay' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
@@ -127,7 +127,7 @@ function AdminPaymentsContent() {
                                                     {payment.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                 {formatDateTime(payment.created_at)}
                                             </td>
                                         </tr>

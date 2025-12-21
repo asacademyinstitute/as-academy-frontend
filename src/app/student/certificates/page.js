@@ -92,7 +92,7 @@ function CertificatesContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
                 user={{ name: user?.name || '', email: user?.email }}

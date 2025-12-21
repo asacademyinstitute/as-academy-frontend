@@ -253,7 +253,7 @@ function AdminSecurityContent() {
                             <div className="bg-gray-50 rounded-lg p-4 border">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-900 dark:text-white">
+                                        <label className="block text-sm font-bold text-gray-900">
                                             Device Restriction Enforcement
                                         </label>
                                         <p className="text-sm text-gray-600 mt-1">
@@ -334,7 +334,7 @@ function AdminSecurityContent() {
                 {/* Device Activity Table */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="px-6 py-4 border-b bg-gray-50">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Security & Device Activity</h2>
+                        <h2 className="text-xl font-bold text-gray-900">Security & Device Activity</h2>
                         <p className="text-sm text-gray-600 mt-1">Monitor student device usage and detect suspicious activity</p>
                     </div>
 
@@ -364,7 +364,7 @@ function AdminSecurityContent() {
                                                 className={item.suspicious ? 'bg-red-50' : 'hover:bg-gray-50'}
                                             >
                                                 <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{item.user.name}</div>
+                                                    <div className="text-sm font-medium text-gray-900">{item.user.name}</div>
                                                     <div className="text-sm text-gray-500">{item.user.email}</div>
                                                     <div className="text-xs text-gray-400">{item.user.phone}</div>
                                                 </td>
@@ -376,10 +376,10 @@ function AdminSecurityContent() {
                                                         {item.totalDevices}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {item.loginCount}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                     {item.lastLogin ? new Date(item.lastLogin).toLocaleString() : 'Never'}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -431,7 +431,7 @@ function AdminSecurityContent() {
                                     >
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex-1">
-                                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{item.user.name}</h3>
+                                                <h3 className="text-base font-semibold text-gray-900">{item.user.name}</h3>
                                                 <p className="text-sm text-gray-600 mt-1">{item.user.email}</p>
                                                 <p className="text-xs text-gray-500 mt-0.5">{item.user.phone}</p>
                                             </div>
@@ -462,7 +462,7 @@ function AdminSecurityContent() {
                                             </div>
                                             <div className="bg-gray-50 rounded-lg p-2">
                                                 <div className="text-xs text-gray-600 mb-1">Last Login</div>
-                                                <div className="text-xs font-medium text-gray-900 dark:text-white">
+                                                <div className="text-xs font-medium text-gray-900">
                                                     {item.lastLogin ? new Date(item.lastLogin).toLocaleDateString() : 'Never'}
                                                 </div>
                                             </div>

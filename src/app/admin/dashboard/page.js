@@ -48,7 +48,7 @@ function AdminDashboardContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
@@ -130,10 +130,10 @@ function AdminDashboardContent() {
                                     {courses.slice(0, 5).map((course) => (
                                         <tr key={course.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{course.title}</div>
+                                                <div className="text-sm font-medium text-gray-900">{course.title}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-white">₹{course.price}</div>
+                                                <div className="text-sm text-gray-900">₹{course.price}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded ${course.status === 'active'

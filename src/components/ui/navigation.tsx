@@ -47,7 +47,7 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
     return (
         <>
             <nav className={cn(
-                "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-border/40",
+                "bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-border/40",
                 className
             )}>
                 <div className="max-w-7xl mx-auto container-padding">

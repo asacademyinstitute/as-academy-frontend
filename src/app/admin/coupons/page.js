@@ -117,18 +117,18 @@ function AdminCouponsContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
                             <Ticket className="w-7 h-7" />
                             Discount Coupons
                         </h1>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage discount coupons for courses</p>
+                        <p className="text-sm text-gray-600 mt-1">Manage discount coupons for courses</p>
                     </div>
                     <button
                         onClick={() => {
@@ -152,45 +152,45 @@ function AdminCouponsContent() {
                 </div>
 
                 {/* Coupons List */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     {loading ? (
                         <div className="flex justify-center py-12">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                         </div>
                     ) : coupons.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-800">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Code</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Discount</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Applicable To</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Usage</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Expiry</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Actions</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Discount</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicable To</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usage</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="bg-white divide-y divide-gray-200">
                                     {coupons.map((coupon) => (
                                         <tr key={coupon.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="font-mono font-bold text-primary">{coupon.code}</span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `₹${coupon.discount_value}`}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {coupon.applicable_to === 'all' ? 'All Courses' : `${coupon.course_ids?.length || 0} Courses`}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {coupon.usage_count} / {coupon.usage_limit || '∞'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {coupon.expiry_date ? formatDate(coupon.expiry_date) : 'No Expiry'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs rounded ${coupon.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                                <span className={`px-2 py-1 text-xs rounded ${coupon.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                                                     {coupon.is_active ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
@@ -198,20 +198,20 @@ function AdminCouponsContent() {
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={() => handleToggle(coupon.id)}
-                                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                                                        className="text-blue-600 hover:text-blue-800"
                                                         title={coupon.is_active ? 'Disable' : 'Enable'}
                                                     >
                                                         {coupon.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                                                     </button>
                                                     <button
                                                         onClick={() => handleEdit(coupon)}
-                                                        className="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400"
+                                                        className="text-yellow-600 hover:text-yellow-800"
                                                     >
                                                         <Edit className="w-5 h-5" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(coupon.id)}
-                                                        className="text-red-600 hover:text-red-800 dark:text-red-400"
+                                                        className="text-red-600 hover:text-red-800"
                                                     >
                                                         <Trash2 className="w-5 h-5" />
                                                     </button>
@@ -225,7 +225,7 @@ function AdminCouponsContent() {
                     ) : (
                         <div className="text-center py-12">
                             <Ticket className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                            <p className="text-gray-600 dark:text-gray-400">No coupons created yet</p>
+                            <p className="text-gray-600">No coupons created yet</p>
                         </div>
                     )}
                 </div>
@@ -234,19 +234,19 @@ function AdminCouponsContent() {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                            <h2 className="text-2xl font-bold text-gray-900 mb-6">
                                 {editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}
                             </h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Coupon Code</label>
+                                    <label className="block text-sm font-medium text-gray-900 mb-1">Coupon Code</label>
                                     <input
                                         type="text"
                                         value={formData.code}
                                         onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                         required
                                         placeholder="e.g., SAVE20"
                                     />
@@ -254,23 +254,23 @@ function AdminCouponsContent() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Discount Type</label>
+                                        <label className="block text-sm font-medium text-gray-900 mb-1">Discount Type</label>
                                         <select
                                             value={formData.discount_type}
                                             onChange={(e) => setFormData({ ...formData, discount_type: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                         >
                                             <option value="percentage">Percentage</option>
                                             <option value="fixed">Fixed Amount</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Discount Value</label>
+                                        <label className="block text-sm font-medium text-gray-900 mb-1">Discount Value</label>
                                         <input
                                             type="number"
                                             value={formData.discount_value}
                                             onChange={(e) => setFormData({ ...formData, discount_value: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                             required
                                             min="0"
                                             max={formData.discount_type === 'percentage' ? '100' : undefined}
@@ -280,11 +280,11 @@ function AdminCouponsContent() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Applicable To</label>
+                                    <label className="block text-sm font-medium text-gray-900 mb-1">Applicable To</label>
                                     <select
                                         value={formData.applicable_to}
                                         onChange={(e) => setFormData({ ...formData, applicable_to: e.target.value, course_ids: [] })}
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                     >
                                         <option value="all">All Courses</option>
                                         <option value="specific">Specific Courses</option>
@@ -293,8 +293,8 @@ function AdminCouponsContent() {
 
                                 {formData.applicable_to === 'specific' && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Select Courses</label>
-                                        <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-40 overflow-y-auto bg-white dark:bg-gray-800">
+                                        <label className="block text-sm font-medium text-gray-900 mb-1">Select Courses</label>
+                                        <div className="border border-gray-300 rounded-lg p-4 max-h-40 overflow-y-auto bg-white">
                                             {courses.map((course) => (
                                                 <label key={course.id} className="flex items-center gap-2 mb-2">
                                                     <input
@@ -309,7 +309,7 @@ function AdminCouponsContent() {
                                                         }}
                                                         className="rounded"
                                                     />
-                                                    <span className="text-sm text-gray-900 dark:text-white">{course.title}</span>
+                                                    <span className="text-sm text-gray-900">{course.title}</span>
                                                 </label>
                                             ))}
                                         </div>
@@ -318,21 +318,21 @@ function AdminCouponsContent() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Expiry Date (Optional)</label>
+                                        <label className="block text-sm font-medium text-gray-900 mb-1">Expiry Date (Optional)</label>
                                         <input
                                             type="date"
                                             value={formData.expiry_date}
                                             onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-900 dark:text-white mb-1">Usage Limit (Optional)</label>
+                                        <label className="block text-sm font-medium text-gray-900 mb-1">Usage Limit (Optional)</label>
                                         <input
                                             type="number"
                                             value={formData.usage_limit}
                                             onChange={(e) => setFormData({ ...formData, usage_limit: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900"
                                             min="1"
                                             placeholder="Unlimited"
                                         />
@@ -352,7 +352,7 @@ function AdminCouponsContent() {
                                             setShowModal(false);
                                             setEditingCoupon(null);
                                         }}
-                                        className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                                        className="flex-1 bg-gray-200 text-gray-900 px-6 py-2 rounded-lg hover:bg-gray-300 transition-all"
                                     >
                                         Cancel
                                     </button>

@@ -75,7 +75,7 @@ function OfflineEnrollmentContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             {/* Header */}
             <div className="bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,7 +84,7 @@ function OfflineEnrollmentContent() {
                             AS ACADEMY - Admin
                         </h1>
                         <div className="flex items-center space-x-4">
-                            <span className="text-gray-700 dark:text-gray-300">Admin: {user?.name}</span>
+                            <span className="text-gray-700">Admin: {user?.name}</span>
                             <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
                                 Logout
                             </button>
@@ -133,7 +133,7 @@ function OfflineEnrollmentContent() {
                                             className="w-full text-left px-4 py-2 hover:bg-gray-50"
                                         >
                                             <div className="font-medium">{s.name}</div>
-                                            <div className="text-sm text-gray-600 dark:text-gray-400">{s.email}</div>
+                                            <div className="text-sm text-gray-600">{s.email}</div>
                                         </button>
                                     ))}
                                 </div>
@@ -163,7 +163,7 @@ function OfflineEnrollmentContent() {
                                             className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
                                         >
                                             <div className="font-medium">{course.title}</div>
-                                            <div className="text-sm text-gray-600 dark:text-gray-400">₹{course.price}</div>
+                                            <div className="text-sm text-gray-600">₹{course.price}</div>
                                         </button>
                                     ))}
                                 </div>

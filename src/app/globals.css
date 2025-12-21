@@ -37,40 +37,6 @@
 
     --radius: 0.5rem;
   }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-
-    --success: 142.1 70.6% 45.3%;
-    --warning: 38 92% 50%;
-    --info: 199 89% 48%;
-  }
 }
 
 @layer base {
@@ -84,32 +50,6 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Dark mode color scheme */
-  html.dark {
-    color-scheme: dark;
-  }
-
-  /* Ensure maximum contrast for text readability in dark mode */
-  html.dark body {
-    @apply bg-gray-950 text-white;
-  }
-
-  /* High contrast text colors for dark mode */
-  html.dark h1,
-  html.dark h2,
-  html.dark h3,
-  html.dark h4,
-  html.dark h5,
-  html.dark h6 {
-    @apply text-white;
-  }
-
-  /* Ensure all paragraphs and text are readable */
-  html.dark p,
-  html.dark span,
-  html.dark div {
-    color: inherit;
-  }
 
   /* Smooth scrolling */
   html {

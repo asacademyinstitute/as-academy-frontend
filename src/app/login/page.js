@@ -36,13 +36,13 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center container-padding py-8 md:py-12">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center container-padding py-8 md:py-12">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-md w-full"
             >
-                <div className="bg-card dark:bg-gray-900 rounded-2xl shadow-premium p-6 md:p-8">
+                <div className="bg-card rounded-2xl shadow-premium p-6 md:p-8">
                     <div className="text-center mb-6 md:mb-8">
                         <h1 className="text-2xl md:text-3xl font-bold gradient-text mb-2">
                             AS ACADEMY

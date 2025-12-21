@@ -60,7 +60,7 @@ export default function CoursesPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             {/* Conditional Header - Show DashboardNav for logged-in users, Login/Signup for guests */}
             {user ? (
                 <DashboardNav
@@ -95,7 +95,7 @@ export default function CoursesPage() {
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Explore Courses</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Explore Courses</h1>
 
                     {/* Search Bar */}
                     <input
@@ -137,7 +137,7 @@ export default function CoursesPage() {
                                 transition={{ delay: index * 0.1 }}
                             >
                                 <Link href={`/courses/${course.id}`}>
-                                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer overflow-hidden">
+                                    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all cursor-pointer overflow-hidden">
                                         {/* Course Thumbnail */}
                                         <div className="h-48 overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
                                             {course.thumbnail_url != null && course.thumbnail_url !== '' ? (

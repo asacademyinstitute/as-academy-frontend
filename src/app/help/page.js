@@ -24,7 +24,7 @@ export default function HelpCenterPage() {
     );
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <ResponsiveNav
                 brand={{ name: 'AS ACADEMY', href: '/' }}
                 items={navItems}
@@ -32,48 +32,48 @@ export default function HelpCenterPage() {
             />
 
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-8">Help Center</h1>
+                <h1 className="text-4xl font-bold text-gray-900 mb-8">Help Center</h1>
 
                 <div className="space-y-8">
                     <section>
-                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Frequently Asked Questions</h2>
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Frequently Asked Questions</h2>
 
                         <div className="space-y-6">
-                            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">How do I enroll in a course?</h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                            <div className="bg-white p-6 rounded-lg shadow-md">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">How do I enroll in a course?</h3>
+                                <p className="text-gray-600">
                                     Browse our courses page, select the course you're interested in, and click the "Enroll Now" button.
                                     You'll need to create an account and complete the payment process.
                                 </p>
                             </div>
 
-                            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">How long do I have access to a course?</h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                            <div className="bg-white p-6 rounded-lg shadow-md">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">How long do I have access to a course?</h3>
+                                <p className="text-gray-600">
                                     Course access duration varies by course. Most courses provide access for the validity period mentioned
                                     on the course page. Check the course details for specific information.
                                 </p>
                             </div>
 
-                            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Do I get a certificate after completing a course?</h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                            <div className="bg-white p-6 rounded-lg shadow-md">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Do I get a certificate after completing a course?</h3>
+                                <p className="text-gray-600">
                                     Yes! Upon successful completion of all course lectures and assessments, you'll receive a digital
                                     certificate that you can download and share.
                                 </p>
                             </div>
 
-                            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Can I get a refund?</h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                            <div className="bg-white p-6 rounded-lg shadow-md">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Can I get a refund?</h3>
+                                <p className="text-gray-600">
                                     We offer refunds within 7 days of purchase if you haven't accessed more than 20% of the course content.
                                     Contact our support team for refund requests.
                                 </p>
                             </div>
 
-                            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">How do I reset my password?</h3>
-                                <p className="text-gray-600 dark:text-gray-400">
+                            <div className="bg-white p-6 rounded-lg shadow-md">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">How do I reset my password?</h3>
+                                <p className="text-gray-600">
                                     Click on "Forgot Password" on the login page, enter your email address, and we'll send you
                                     instructions to reset your password.
                                 </p>
@@ -81,9 +81,9 @@ export default function HelpCenterPage() {
                         </div>
                     </section>
 
-                    <section className="bg-blue-50 dark:bg-blue-900/20 p-8 rounded-lg">
-                        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Still need help?</h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    <section className="bg-blue-50 p-8 rounded-lg">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Still need help?</h2>
+                        <p className="text-gray-600 mb-4">
                             Can't find the answer you're looking for? Our support team is here to help.
                         </p>
                         <Link

@@ -91,14 +91,14 @@ function AdminEnrollmentsContent() {
     });
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Enrollments</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Enrollments</h1>
                     <Link
                         href="/admin/enrollments/create"
                         className="bg-blue-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base font-medium"
@@ -108,19 +108,19 @@ function AdminEnrollmentsContent() {
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 md:p-6 mb-6">
+                <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input
                             type="text"
                             placeholder="Search by student name, email, or course..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                         />
                         <select
                             value={filterStatus}
                             onChange={(e) => setFilterStatus(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                         >
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
@@ -131,9 +131,9 @@ function AdminEnrollmentsContent() {
                 </div>
 
                 {/* Enrollments Table */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
-                    <div className="px-4 md:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="px-4 md:px-6 py-4 border-b border-gray-200">
+                        <h2 className="text-lg md:text-xl font-bold text-gray-900">
                             All Enrollments ({filteredEnrollments.length})
                         </h2>
                     </div>
@@ -144,48 +144,48 @@ function AdminEnrollmentsContent() {
                         </div>
                     ) : filteredEnrollments.length > 0 ? (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-800">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Course</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Enrolled</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valid Until</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Enrolled</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody className="bg-white divide-y divide-gray-200">
                                     {filteredEnrollments.map((enrollment) => (
-                                        <tr key={enrollment.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        <tr key={enrollment.id} className="hover:bg-gray-50">
                                             <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{enrollment.users?.name}</div>
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">{enrollment.users?.email}</div>
+                                                <div className="text-sm font-medium text-gray-900">{enrollment.users?.name}</div>
+                                                <div className="text-sm text-gray-500">{enrollment.users?.email}</div>
                                             </td>
                                             <td className="px-4 md:px-6 py-4">
-                                                <div className="text-sm text-gray-900 dark:text-white max-w-xs truncate">{enrollment.courses?.title}</div>
+                                                <div className="text-sm text-gray-900 max-w-xs truncate">{enrollment.courses?.title}</div>
                                             </td>
-                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {formatDate(enrollment.enrolled_at)}
                                             </td>
-                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <td className="px-4 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {formatDate(enrollment.valid_until)}
                                             </td>
                                             <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded ${enrollment.payment_type === 'online'
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {enrollment.payment_type}
                                                 </span>
                                             </td>
                                             <td className="px-4 md:px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded ${enrollment.status === 'active'
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                                        ? 'bg-green-100 text-green-800'
                                                         : enrollment.status === 'expired'
-                                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                                            ? 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-red-100 text-red-800'
                                                     }`}>
                                                     {enrollment.status}
                                                 </span>
@@ -196,13 +196,13 @@ function AdminEnrollmentsContent() {
                                                         <>
                                                             <button
                                                                 onClick={() => handleExtend(enrollment.id)}
-                                                                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                                                className="text-blue-600 hover:text-blue-700 font-medium"
                                                             >
                                                                 Extend
                                                             </button>
                                                             <button
                                                                 onClick={() => handleCancel(enrollment.id)}
-                                                                className="text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 font-medium"
+                                                                className="text-yellow-600 hover:text-yellow-700 font-medium"
                                                             >
                                                                 Cancel
                                                             </button>
@@ -210,7 +210,7 @@ function AdminEnrollmentsContent() {
                                                     )}
                                                     <button
                                                         onClick={() => handleDelete(enrollment.id)}
-                                                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                                                        className="text-red-600 hover:text-red-700 font-medium"
                                                     >
                                                         Delete
                                                     </button>
@@ -223,7 +223,7 @@ function AdminEnrollmentsContent() {
                         </div>
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 dark:text-gray-400">No enrollments found</p>
+                            <p className="text-gray-500">No enrollments found</p>
                         </div>
                     )}
                 </div>

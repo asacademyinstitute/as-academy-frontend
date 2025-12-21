@@ -44,7 +44,7 @@ export default function HomePage() {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
             {/* Navigation */}
             <ResponsiveNav
                 brand={{ name: 'AS ACADEMY', href: '/' }}
@@ -59,7 +59,7 @@ export default function HomePage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6"
+                        className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6"
                     >
                         Learn Without Limits
                     </motion.h1>
@@ -67,7 +67,7 @@ export default function HomePage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
-                        className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-6 md:mb-8 max-w-2xl mx-auto px-4"
+                        className="text-lg md:text-xl text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto px-4"
                     >
                         Access world-class courses, learn at your own pace, and achieve your goals with AS Academy
                     </motion.p>
@@ -85,7 +85,7 @@ export default function HomePage() {
                         </Link>
                         <Link
                             href="/signup"
-                            className="bg-background dark:bg-gray-800 text-primary dark:text-blue-400 px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold border-2 border-primary dark:border-blue-400 hover:bg-accent transition-all touch-target"
+                            className="bg-background text-primary px-6 md:px-8 py-3 md:py-4 rounded-lg text-base md:text-lg font-semibold border-2 border-primary hover:bg-accent transition-all touch-target"
                         >
                             Sign Up Free
                         </Link>
@@ -95,22 +95,22 @@ export default function HomePage() {
 
             {/* Features Section */}
             <section className="max-w-7xl mx-auto container-padding section-spacing">
-                <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12 dark:text-white">Why Choose AS Academy?</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">Why Choose AS Academy?</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                         viewport={{ once: true }}
-                        className="bg-card dark:bg-gray-800 p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
+                        className="bg-card p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
                     >
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
-                            <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-semibold mb-2 dark:text-white">Expert-Led Courses</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Learn from industry professionals with years of experience</p>
+                        <h3 className="text-xl font-semibold mb-2">Expert-Led Courses</h3>
+                        <p className="text-gray-600">Learn from industry professionals with years of experience</p>
                     </motion.div>
 
                     <motion.div
@@ -118,15 +118,15 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                         viewport={{ once: true }}
-                        className="bg-card dark:bg-gray-800 p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
+                        className="bg-card p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
                     >
-                        <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-4">
-                            <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-semibold mb-2 dark:text-white">Certificates</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Earn recognized certificates upon course completion</p>
+                        <h3 className="text-xl font-semibold mb-2">Certificates</h3>
+                        <p className="text-gray-600">Earn recognized certificates upon course completion</p>
                     </motion.div>
 
                     <motion.div
@@ -134,15 +134,15 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                         viewport={{ once: true }}
-                        className="bg-card dark:bg-gray-800 p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
+                        className="bg-card p-6 md:p-8 rounded-xl shadow-soft hover:shadow-medium transition-all hover-lift"
                     >
-                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-4">
-                            <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-semibold mb-2 dark:text-white">Learn at Your Pace</h3>
-                        <p className="text-gray-600 dark:text-gray-400">Access courses anytime, anywhere, on any device</p>
+                        <h3 className="text-xl font-semibold mb-2">Learn at Your Pace</h3>
+                        <p className="text-gray-600">Access courses anytime, anywhere, on any device</p>
                     </motion.div>
                 </div>
             </section>

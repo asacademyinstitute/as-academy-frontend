@@ -52,7 +52,7 @@ function StudentDashboardContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
@@ -67,21 +67,21 @@ function StudentDashboardContent() {
                 {/* Stats */}
                 {stats && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Enrolled Courses</div>
                             <div className="text-2xl md:text-3xl font-bold text-primary">{stats.enrolledCourses}</div>
                         </div>
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Completed Lectures</div>
-                            <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-500">{stats.completedLectures}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-green-600">{stats.completedLectures}</div>
                         </div>
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Quiz Attempts</div>
-                            <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-500">{stats.quizAttempts}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-purple-600">{stats.quizAttempts}</div>
                         </div>
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-4 md:p-6 border border-border">
                             <div className="text-xs md:text-sm text-muted-foreground mb-1">Certificates</div>
-                            <div className="text-2xl md:text-3xl font-bold text-yellow-600 dark:text-yellow-500">{stats.certificates}</div>
+                            <div className="text-2xl md:text-3xl font-bold text-yellow-600">{stats.certificates}</div>
                         </div>
                     </div>
                 )}
@@ -158,7 +158,7 @@ function StudentDashboardContent() {
                                 <Link
                                     key={enrollment.id}
                                     href={`/student/courses/${enrollment.course_id}`}
-                                    className="bg-card dark:bg-gray-900 rounded-lg shadow-soft hover:shadow-medium transition-all hover-lift border border-border"
+                                    className="bg-card rounded-lg shadow-soft hover:shadow-medium transition-all hover-lift border border-border"
                                 >
                                     {/* Course Thumbnail */}
                                     <div className="h-40 rounded-t-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
@@ -199,7 +199,7 @@ function StudentDashboardContent() {
                             ))}
                         </div>
                     ) : (
-                        <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-8 md:p-12 text-center border border-border">
+                        <div className="bg-card rounded-lg shadow-soft p-8 md:p-12 text-center border border-border">
                             <p className="text-muted-foreground mb-4">You haven't enrolled in any courses yet</p>
                             <Link
                                 href="/courses"

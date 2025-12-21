@@ -45,7 +45,7 @@ function AuditLogsContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
@@ -85,7 +85,7 @@ function AuditLogsContent() {
                 {/* Logs Table */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="px-6 py-4 border-b">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">System Audit Logs</h2>
+                        <h2 className="text-xl font-bold text-gray-900">System Audit Logs</h2>
                     </div>
                     {loading ? (
                         <div className="flex justify-center py-12">
@@ -107,11 +107,11 @@ function AuditLogsContent() {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {logs.map((log) => (
                                         <tr key={log.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                 {formatDateTime(log.created_at)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{log.users?.name || 'System'}</div>
+                                                <div className="text-sm font-medium text-gray-900">{log.users?.name || 'System'}</div>
                                                 <div className="text-sm text-gray-500">{log.users?.email}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -119,11 +119,11 @@ function AuditLogsContent() {
                                                     {log.action}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {log.resource_type}
                                                 {log.resource_id && <div className="text-xs text-gray-500">ID: {log.resource_id}</div>}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                                 {log.ip_address || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
