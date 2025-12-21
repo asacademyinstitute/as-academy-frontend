@@ -16,14 +16,6 @@ function TeacherDashboardContent() {
     const [courses, setCourses] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showRequestModal, setShowRequestModal] = useState(false);
-    const [requestData, setRequestData] = useState({
-        title: '',
-        description: '',
-        category: '',
-        level: 'beginner',
-    });
-    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -46,25 +38,7 @@ function TeacherDashboardContent() {
         }
     };
 
-    const handleRequestChange = (e) => {
-        setRequestData({ ...requestData, [e.target.name]: e.target.value });
-    };
 
-    const handleRequestSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-
-        try {
-            await userAPI.requestCourse(requestData);
-            alert('Course request submitted successfully! Admin will review your request.');
-            setShowRequestModal(false);
-            setRequestData({ title: '', description: '', category: '', level: 'beginner' });
-        } catch (error) {
-            alert('Failed to submit course request. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
 
     const handleLogout = async () => {
         await logout();
@@ -73,7 +47,7 @@ function TeacherDashboardContent() {
 
     const navItems = [
         { label: 'My Courses', href: '/teacher/dashboard', icon: <BookOpen className="w-5 h-5" /> },
-        { label: 'My Requested Courses', href: '/teacher/requested-courses', icon: <BookOpen className="w-5 h-5" /> },
+        { label: 'Request Course', href: '/teacher/request-course', icon: <BookOpen className="w-5 h-5" /> },
         { label: 'Students', href: '/teacher/students', icon: <Users className="w-5 h-5" /> },
         { label: 'Live Classes', href: '/teacher/live-classes', icon: <Video className="w-5 h-5" /> },
         { label: 'Profile', href: '/teacher/profile', icon: <User className="w-5 h-5" /> },
@@ -114,12 +88,12 @@ function TeacherDashboardContent() {
                 <div className="bg-card dark:bg-gray-900 rounded-lg shadow-soft p-4 md:p-6 border border-border">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                         <h2 className="text-xl md:text-2xl font-bold text-foreground">My Courses</h2>
-                        <button
-                            onClick={() => setShowRequestModal(true)}
-                            className="bg-primary text-primary-foreground px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-primary/90 transition-all shadow-medium touch-target text-sm md:text-base"
+                        <Link
+                            href="/teacher/request-course"
+                            className="bg-primary text-primary-foreground px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-primary/90 transition-all shadow-medium touch-target text-sm md:text-base text-center"
                         >
                             Request New Course
-                        </button>
+                        </Link>
                     </div>
 
                     {loading ? (
