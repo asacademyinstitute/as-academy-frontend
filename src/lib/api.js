@@ -231,8 +231,8 @@ export const aiAPI = {
 };
 
 export const auditAPI = {
-    getLogs: (params) => api.get('/audit/logs', { params }),
-    getUserActivity: (userId, days) => api.get(`/audit/user/${userId}/activity`, { params: { days } }),
+    getLogs: (params) => api.get('/audit', { params }),
+    getUserActivity: (userId, days) => api.get(`/audit/user/${userId}`, { params: { days } }),
 };
 
 // Device Management API
