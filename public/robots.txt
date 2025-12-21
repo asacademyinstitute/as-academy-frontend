@@ -1,0 +1,12 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin, student, and teacher dashboards
+User-agent: *
+Disallow: /admin/
+Disallow: /student/
+Disallow: /teacher/
+
+# Sitemap location
+Sitemap: https://asacademy.in/sitemap.xml

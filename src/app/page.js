@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import useAuthStore from '@/store/authStore';
 import { ResponsiveNav } from '@/components/ui/navigation';
+import OrganizationSchema from '@/components/seo/OrganizationSchema';
+
 
 
 export default function HomePage() {
@@ -32,7 +34,7 @@ export default function HomePage() {
 
     const navActions = (
         <>
-            
+
             <Link
                 href="/signup"
                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
