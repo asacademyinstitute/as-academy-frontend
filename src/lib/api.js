@@ -3,7 +3,9 @@ import axios from 'axios';
 // API Base URL - must be set at runtime
 // For local development, use .env.local with NEXT_PUBLIC_API_URL
 // For production, set in Vercel environment variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+    ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+    : undefined;
 
 // Only throw error at runtime (not during build)
 if (typeof window !== 'undefined' && !API_BASE_URL) {
@@ -90,7 +92,8 @@ api.interceptors.response.use(
                 }
 
                 // Try to refresh token (include device ID)
-                const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+                // Use the base URL with /api prefix
+                const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`, {
                     refreshToken,
                 }, {
                     headers: {
