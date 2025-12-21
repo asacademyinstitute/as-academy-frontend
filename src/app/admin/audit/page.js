@@ -23,7 +23,7 @@ function AuditLogsContent() {
     const fetchLogs = async () => {
         try {
             const response = await auditAPI.getLogs(filter);
-            setLogs(response.data.data || []);
+            setLogs(response.data.data?.logs || []);
         } catch (error) {
             console.error('Error fetching logs:', error);
         } finally {
