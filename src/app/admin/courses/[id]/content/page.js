@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminMobileNav from '@/components/AdminMobileNav';
-import { coursesAPI, chapterAPI, lectureAPI } from '@/lib/api';
+import { coursesAPI, chapterAPI, lectureAPI, streamingAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 
 function AdminCourseContentContent() {
@@ -88,8 +88,12 @@ function AdminCourseContentContent() {
         }
 
         try {
-            // Open file URL in new tab for download
-            window.open(lecture.file_url, '_blank');
+            // Get signed download URL from backend
+            const response = await streamingAPI.getAdminDownloadUrl(lecture.id);
+            const signedUrl = response.data.data.url;
+
+            // Open signed URL in new tab for download
+            window.open(signedUrl, '_blank');
         } catch (error) {
             console.error('Error downloading lecture:', error);
             alert('Failed to download lecture');

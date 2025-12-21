@@ -171,6 +171,7 @@ export const streamingAPI = {
     uploadFile: (formData) => api.post('/streaming/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
+    getAdminDownloadUrl: (lectureId) => api.get(`/streaming/admin/download/${lectureId}`),
 };
 
 export const lectureAPI = {
