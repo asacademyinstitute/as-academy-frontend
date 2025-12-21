@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminMobileNav from '@/components/AdminMobileNav';
 import { coursesAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 
@@ -125,72 +126,25 @@ function EditCourseContent() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/admin/dashboard"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/admin/users"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Users
-                        </Link>
-                        <Link
-                            href="/admin/courses"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Courses
-                        </Link>
-                        <Link
-                            href="/admin/payments"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 <div className="mb-6">
                     <Link
                         href="/admin/courses"
-                        className="text-blue-600 hover:text-blue-700 flex items-center"
+                        className="text-blue-600 hover:text-blue-700 flex items-center text-sm sm:text-base"
                     >
                         ← Back to Courses
                     </Link>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Edit Course</h2>
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Edit Course</h2>
                         <button
                             onClick={handleDelete}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm sm:text-base"
                         >
                             Delete Course
                         </button>
@@ -352,17 +306,17 @@ function EditCourseContent() {
                         </div>
 
                         {/* Submit Buttons */}
-                        <div className="flex justify-end space-x-4 pt-4">
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4">
                             <Link
                                 href="/admin/courses"
-                                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                                className="w-full sm:w-auto text-center px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-900 dark:text-white"
                             >
                                 Cancel
                             </Link>
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
+                                className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-blue-400 disabled:cursor-not-allowed"
                             >
                                 {submitting ? 'Updating...' : 'Update Course'}
                             </button>
