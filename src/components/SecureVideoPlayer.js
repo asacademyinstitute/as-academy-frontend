@@ -101,7 +101,12 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
             ref={containerRef}
             className="relative bg-black"
             onContextMenu={handleContextMenu}
-            style={{ userSelect: 'none', width: '100%', height: isFullscreen ? '100vh' : 'auto' }}
+            style={{
+                userSelect: 'none',
+                width: '100%',
+                height: isFullscreen ? '100vh' : 'auto',
+                position: 'relative' // Ensure container is positioned
+            }}
         >
             {/* Video Element */}
             <video
@@ -119,8 +124,9 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
 
             {/* Watermark Overlay - Always visible in both normal and fullscreen */}
             <div
-                className="absolute pointer-events-none transition-all duration-500"
+                className="pointer-events-none transition-all duration-500"
                 style={{
+                    position: 'absolute', // Absolute within the container
                     left: `${watermarkPosition.x}%`,
                     top: `${watermarkPosition.y}%`,
                     zIndex: 2147483647, // Maximum z-index to ensure it's always on top
@@ -132,8 +138,7 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
                     fontWeight: '600',
                     textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
                     whiteSpace: 'nowrap',
-                    opacity: 0.35,
-                    position: 'fixed' // Use fixed positioning for fullscreen
+                    opacity: 0.7 // Increased opacity for better visibility
                 }}
             >
                 {watermarkText}
