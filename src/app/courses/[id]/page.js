@@ -19,6 +19,7 @@ export default function CourseDetailPage() {
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponLoading, setCouponLoading] = useState(false);
+    const [contentExpanded, setContentExpanded] = useState(false);
 
     useEffect(() => {
         fetchCourse();
@@ -191,28 +192,40 @@ export default function CourseDetailPage() {
                                 )}
 
                                 <div className="border-t pt-6">
-                                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Course Content</h3>
-                                    {course.chapters && course.chapters.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {course.chapters.map((chapter, idx) => (
-                                                <div key={chapter.id} className="border rounded-lg p-4">
-                                                    <h4 className="font-semibold text-gray-900 dark:text-white">
-                                                        {idx + 1}. {chapter.title}
-                                                    </h4>
-                                                    {chapter.lectures && chapter.lectures.length > 0 && (
-                                                        <ul className="mt-2 space-y-1 ml-4">
-                                                            {chapter.lectures.map((lecture) => (
-                                                                <li key={lecture.id} className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                    • {lecture.title}
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    )}
+                                    <button
+                                        onClick={() => setContentExpanded(!contentExpanded)}
+                                        className="flex items-center justify-between w-full text-left mb-4 hover:opacity-80 transition"
+                                    >
+                                        <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Course Content</h3>
+                                        <span className="text-2xl text-gray-600 dark:text-gray-400">
+                                            {contentExpanded ? '−' : '+'}
+                                        </span>
+                                    </button>
+                                    {contentExpanded && (
+                                        {
+                                            course.chapters && course.chapters.length > 0 ? (
+                                                <div className="space-y-4">
+                                                    {course.chapters.map((chapter, idx) => (
+                                                        <div key={chapter.id} className="border rounded-lg p-4">
+                                                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                                                                {idx + 1}. {chapter.title}
+                                                            </h4>
+                                                            {chapter.lectures && chapter.lectures.length > 0 && (
+                                                                <ul className="mt-2 space-y-1 ml-4">
+                                                                    {chapter.lectures.map((lecture) => (
+                                                                        <li key={lecture.id} className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                            • {lecture.title}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            )}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-500 dark:text-gray-400">No content available yet</p>
+                                            ) : (
+                                                <p className="text-gray-500 dark:text-gray-400">No content available yet</p>
+                                            )
+                                        }
                                     )}
                                 </div>
                             </div>
