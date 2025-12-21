@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "AS Academy - Learning Management System",
   description: "Modern LMS platform for online education",
+  icons: {
+    icon: "https://i.ibb.co/s9xkRzbw/favicon-ico.jpg",
+  },
 };
 
 export default function RootLayout({
