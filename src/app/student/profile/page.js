@@ -85,7 +85,6 @@ function ProfileContent() {
                 user={{ name: user?.name || '', email: user?.email }}
                 navItems={navItems}
                 onLogout={handleLogout}
-                actions={}
             />
 
             {/* Content */}

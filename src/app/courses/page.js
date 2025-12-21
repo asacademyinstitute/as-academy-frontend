@@ -67,7 +67,6 @@ export default function CoursesPage() {
                     user={{ name: user?.name || '', email: user?.email }}
                     navItems={navItems}
                     onLogout={handleLogout}
-                    actions={}
                 />
             ) : (
                 <ResponsiveNav
@@ -79,7 +78,7 @@ export default function CoursesPage() {
                     ]}
                     actions={
                         <>
-                            
+
                             <Link
                                 href="/signup"
                                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
