@@ -179,30 +179,30 @@ export default function CourseDetailPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="grid lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2">
-                            <div className="bg-white rounded-xl shadow-md p-8">
-                                <h1 className="text-4xl font-bold text-gray-900 mb-4">{course.title}</h1>
-                                <p className="text-gray-600 text-lg mb-6">{course.description}</p>
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-8">
+                                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">{course.title}</h1>
+                                <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">{course.description}</p>
 
                                 {course.users && (
                                     <div className="mb-6">
-                                        <h3 className="font-semibold text-gray-900 mb-2">Instructor</h3>
-                                        <p className="text-gray-600">{course.users.name}</p>
+                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Instructor</h3>
+                                        <p className="text-gray-600 dark:text-gray-400">{course.users.name}</p>
                                     </div>
                                 )}
 
                                 <div className="border-t pt-6">
-                                    <h3 className="text-2xl font-semibold mb-4">Course Content</h3>
+                                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Course Content</h3>
                                     {course.chapters && course.chapters.length > 0 ? (
                                         <div className="space-y-4">
                                             {course.chapters.map((chapter, idx) => (
                                                 <div key={chapter.id} className="border rounded-lg p-4">
-                                                    <h4 className="font-semibold text-gray-900">
+                                                    <h4 className="font-semibold text-gray-900 dark:text-white">
                                                         {idx + 1}. {chapter.title}
                                                     </h4>
                                                     {chapter.lectures && chapter.lectures.length > 0 && (
                                                         <ul className="mt-2 space-y-1 ml-4">
                                                             {chapter.lectures.map((lecture) => (
-                                                                <li key={lecture.id} className="text-gray-600 text-sm">
+                                                                <li key={lecture.id} className="text-gray-600 dark:text-gray-400 text-sm">
                                                                     • {lecture.title}
                                                                 </li>
                                                             ))}
@@ -212,7 +212,7 @@ export default function CourseDetailPage() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-gray-500">No content available yet</p>
+                                        <p className="text-gray-500 dark:text-gray-400">No content available yet</p>
                                     )}
                                 </div>
                             </div>
