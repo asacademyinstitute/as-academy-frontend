@@ -7,7 +7,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { certificateAPI, enrollmentAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { DashboardNav } from '@/components/ui/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 function CertificatesContent() {
@@ -98,7 +97,7 @@ function CertificatesContent() {
                 user={{ name: user?.name || '', email: user?.email }}
                 navItems={navItems}
                 onLogout={handleLogout}
-                actions={<ThemeToggle />}
+                actions={}
             />
 
             {/* Content */}

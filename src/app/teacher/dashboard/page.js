@@ -7,7 +7,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { coursesAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { DashboardNav } from '@/components/ui/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Users, Video, User } from 'lucide-react';
 
 function TeacherDashboardContent() {
@@ -61,7 +60,7 @@ function TeacherDashboardContent() {
                 user={{ name: user?.name || '', email: user?.email }}
                 navItems={navItems}
                 onLogout={handleLogout}
-                actions={<ThemeToggle />}
+                actions={}
             />
 
             {/* Content */}

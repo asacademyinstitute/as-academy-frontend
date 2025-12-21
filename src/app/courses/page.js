@@ -8,7 +8,6 @@ import { coursesAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import useAuthStore from '@/store/authStore';
 import { DashboardNav, ResponsiveNav } from '@/components/ui/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 export default function CoursesPage() {
@@ -68,7 +67,7 @@ export default function CoursesPage() {
                     user={{ name: user?.name || '', email: user?.email }}
                     navItems={navItems}
                     onLogout={handleLogout}
-                    actions={<ThemeToggle />}
+                    actions={}
                 />
             ) : (
                 <ResponsiveNav
@@ -80,7 +79,7 @@ export default function CoursesPage() {
                     ]}
                     actions={
                         <>
-                            <ThemeToggle />
+                            
                             <Link
                                 href="/signup"
                                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"

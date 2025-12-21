@@ -7,7 +7,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { userAPI, authAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { DashboardNav } from '@/components/ui/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 function ProfileContent() {
@@ -86,7 +85,7 @@ function ProfileContent() {
                 user={{ name: user?.name || '', email: user?.email }}
                 navItems={navItems}
                 onLogout={handleLogout}
-                actions={<ThemeToggle />}
+                actions={}
             />
 
             {/* Content */}

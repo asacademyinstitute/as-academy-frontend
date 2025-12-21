@@ -8,7 +8,6 @@ import { enrollmentAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { formatDate } from '@/lib/utils';
 import { DashboardNav } from '@/components/ui/navigation';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 function StudentDashboardContent() {
@@ -59,7 +58,7 @@ function StudentDashboardContent() {
                 user={{ name: user?.name || '', email: user?.email }}
                 navItems={navItems}
                 onLogout={handleLogout}
-                actions={<ThemeToggle />}
+                actions={}
             />
 
             {/* Content */}
