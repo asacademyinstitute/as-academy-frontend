@@ -135,13 +135,16 @@ function TeacherDashboardContent() {
                         </div>
                     )}
                 </div>
-                );
+            </div>
+        </div>
+    );
 }
 
-                export default function TeacherDashboard() {
+export default function TeacherDashboard() {
     return (
-                <ProtectedRoute allowedRoles={['teacher']}>
-                    <TeacherDashboardContent />
-                </ProtectedRoute>
-                );
+        <ProtectedRoute allowedRoles={['teacher']}>
+            <TeacherDashboardContent />
+        </ProtectedRoute>
+    );
 }
+
