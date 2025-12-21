@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 // Only throw error at runtime (not during build)
 if (typeof window !== 'undefined' && !API_BASE_URL) {
-    console.error('❌ NEXT_PUBLIC_API_URL is not defined. API calls will fail.');
+    console.error('âŒ NEXT_PUBLIC_API_URL is not defined. API calls will fail.');
 }
 
 
@@ -64,7 +64,7 @@ api.interceptors.response.use(
                 requestUrl.includes('/auth/refresh');
 
             if (!isAuthRoute) {
-                console.error('🚫 DEVICE_SESSION_INVALID - forcing logout');
+                console.error('ðŸš« DEVICE_SESSION_INVALID - forcing logout');
                 console.error('Request URL:', requestUrl);
 
                 // Complete cleanup - clear ALL storage
@@ -109,7 +109,7 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (refreshError) {
                 // Refresh failed, logout user
-                console.error('🚫 Token refresh failed - forcing logout');
+                console.error('ðŸš« Token refresh failed - forcing logout');
                 localStorage.clear();
                 sessionStorage.clear();
                 window.location.href = '/login?error=session_expired';
@@ -275,10 +275,4 @@ export const couponAPI = {
     toggle: (id) => api.patch(`/coupons/${id}/toggle`),
     validate: (code, courseId) => api.post('/coupons/validate', { code, courseId }),
     getStats: (id) => api.get(`/coupons/${id}/stats`),
-};
-
-
-// Lecture API
-export const lectureAPI = {
-    transfer: (data) => api.post('/lectures/transfer', data),
 };
