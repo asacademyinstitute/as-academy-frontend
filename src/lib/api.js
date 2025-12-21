@@ -156,7 +156,7 @@ export const enrollmentAPI = {
 };
 
 export const paymentAPI = {
-    createOrder: (courseId) => api.post('/payments/create-order', { courseId }),
+    createOrder: (courseId, couponCode = null) => api.post('/payments/create-order', { courseId, couponCode }),
     verifyPayment: (data) => api.post('/payments/verify', data),
     offlineEnroll: (data) => api.post('/payments/offline-enroll', data),
     getHistory: (params) => api.get('/payments/history', { params }),
@@ -264,3 +264,16 @@ export const paymentAnalyticsAPI = {
     getByCourse: () => api.get('/payments/analytics/by-course'),
     getFiltered: (params) => api.get('/payments/filtered', { params }),
 };
+
+// Coupon API
+export const couponAPI = {
+    create: (data) => api.post('/coupons', data),
+    getAll: (params) => api.get('/coupons', { params }),
+    getOne: (id) => api.get(`/coupons/${id}`),
+    update: (id, data) => api.put(`/coupons/${id}`, data),
+    delete: (id) => api.delete(`/coupons/${id}`),
+    toggle: (id) => api.patch(`/coupons/${id}/toggle`),
+    validate: (code, courseId) => api.post('/coupons/validate', { code, courseId }),
+    getStats: (id) => api.get(`/coupons/${id}/stats`),
+};
+

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Script from 'next/script';
-import { coursesAPI, paymentAPI } from '@/lib/api';
+import { coursesAPI, paymentAPI, couponAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import useAuthStore from '@/store/authStore';
 
@@ -16,6 +16,9 @@ export default function CourseDetailPage() {
     const [loading, setLoading] = useState(true);
     const [purchasing, setPurchasing] = useState(false);
     const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponLoading, setCouponLoading] = useState(false);
 
     useEffect(() => {
         fetchCourse();
@@ -30,6 +33,30 @@ export default function CourseDetailPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            alert('Please enter a coupon code');
+            return;
+        }
+
+        setCouponLoading(true);
+        try {
+            const response = await couponAPI.validate(couponCode.trim(), course.id);
+            setAppliedCoupon(response.data.data);
+            alert('Coupon applied successfully!');
+        } catch (error) {
+            alert(error.response?.data?.message || 'Invalid coupon code');
+            setAppliedCoupon(null);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setCouponCode('');
+        setAppliedCoupon(null);
     };
 
     const handlePurchase = async () => {
@@ -48,7 +75,7 @@ export default function CourseDetailPage() {
         setPurchasing(true);
         try {
             console.log('Creating payment order for course:', course.id);
-            const orderResponse = await paymentAPI.createOrder(course.id);
+            const orderResponse = await paymentAPI.createOrder(course.id, appliedCoupon?.code || null);
             console.log('Order response:', orderResponse.data);
 
             const { orderId, amount, currency, keyId } = orderResponse.data.data;
@@ -208,13 +235,71 @@ export default function CourseDetailPage() {
                                         Go to Course
                                     </Link>
                                 ) : (
-                                    <button
-                                        onClick={handlePurchase}
-                                        disabled={purchasing || !razorpayLoaded}
-                                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {!razorpayLoaded ? 'Loading Payment System...' : purchasing ? 'Processing...' : 'Enroll Now'}
-                                    </button>
+                                    <>
+                                        {/* Coupon Input */}
+                                        <div className="mb-4">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Have a coupon code?
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={couponCode}
+                                                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                    placeholder="Enter code"
+                                                    disabled={appliedCoupon}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white disabled:opacity-50"
+                                                />
+                                                {appliedCoupon ? (
+                                                    <button
+                                                        onClick={handleRemoveCoupon}
+                                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={handleApplyCoupon}
+                                                        disabled={couponLoading || !couponCode.trim()}
+                                                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                                    >
+                                                        {couponLoading ? 'Checking...' : 'Apply'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {appliedCoupon && (
+                                                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-sm text-green-700 dark:text-green-400">
+                                                    ✓ Coupon "{appliedCoupon.code}" applied!
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Price Breakdown */}
+                                        {appliedCoupon && (
+                                            <div className="mb-4 space-y-2 text-sm">
+                                                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                                                    <span>Original Price:</span>
+                                                    <span>{formatCurrency(appliedCoupon.original_amount)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-green-600 dark:text-green-400">
+                                                    <span>Discount:</span>
+                                                    <span>- {formatCurrency(appliedCoupon.discount_amount)}</span>
+                                                </div>
+                                                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                                                    <span>Final Price:</span>
+                                                    <span className="text-blue-600 dark:text-blue-400">{formatCurrency(appliedCoupon.final_amount)}</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={handlePurchase}
+                                            disabled={purchasing || !razorpayLoaded}
+                                            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {!razorpayLoaded ? 'Loading Payment System...' : purchasing ? 'Processing...' : `Enroll Now ${appliedCoupon ? `- ${formatCurrency(appliedCoupon.final_amount)}` : ''}`}
+                                        </button>
+                                    </>
                                 )}
 
                                 <div className="mt-6 space-y-3 text-sm text-gray-600">
