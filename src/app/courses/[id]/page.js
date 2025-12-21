@@ -219,11 +219,11 @@ export default function CourseDetailPage() {
                         </div>
 
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
-                                <div className="text-3xl font-bold text-blue-600 mb-4">
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md p-6 sticky top-6">
+                                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-4">
                                     {formatCurrency(course.price)}
                                 </div>
-                                <div className="text-gray-600 mb-6">
+                                <div className="text-gray-600 dark:text-gray-400 mb-6">
                                     {course.validity_days} days access
                                 </div>
 
