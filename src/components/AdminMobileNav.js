@@ -12,9 +12,10 @@ export default function AdminMobileNav({ user, onLogout }) {
         { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
         { href: '/admin/users', label: 'Users', icon: '👥' },
         { href: '/admin/courses', label: 'Courses', icon: '📚' },
+        { href: '/admin/enrollments', label: 'Enrollments', icon: '🎓' },
         { href: '/admin/payments', label: 'Payments', icon: '💳' },
-        { href: '/admin/security', label: 'Security', icon: '🔒' },
         { href: '/admin/course-requests', label: 'Course Requests', icon: '📝' },
+        { href: '/admin/security', label: 'Security', icon: '🔒' },
         { href: '/admin/audit', label: 'Audit Logs', icon: '📋' },
     ];
 
@@ -84,8 +85,8 @@ export default function AdminMobileNav({ user, onLogout }) {
                                     key={item.href}
                                     href={item.href}
                                     className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${isActive(item.href)
-                                            ? 'border-blue-600 text-blue-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-600 text-blue-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     {item.label}
@@ -148,8 +149,8 @@ export default function AdminMobileNav({ user, onLogout }) {
                                 href={item.href}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive(item.href)
-                                        ? 'bg-blue-50 text-blue-600 font-medium shadow-sm'
-                                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-blue-50 text-blue-600 font-medium shadow-sm'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 <span className="text-2xl">{item.icon}</span>

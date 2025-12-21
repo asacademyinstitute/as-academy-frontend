@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminMobileNav from '@/components/AdminMobileNav';
 import { userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { formatDate } from '@/lib/utils';
@@ -57,42 +58,7 @@ function AdminUsersContent() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link href="/admin/dashboard" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Dashboard
-                        </Link>
-                        <Link href="/admin/users" className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium">
-                            Users
-                        </Link>
-                        <Link href="/admin/courses" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Courses
-                        </Link>
-                        <Link href="/admin/payments" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -164,8 +130,8 @@ function AdminUsersContent() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                                        u.role === 'teacher' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-green-100 text-green-800'
+                                                    u.role === 'teacher' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-green-100 text-green-800'
                                                     }`}>
                                                     {u.role}
                                                 </span>

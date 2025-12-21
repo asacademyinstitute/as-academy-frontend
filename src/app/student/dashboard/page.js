@@ -160,8 +160,21 @@ function StudentDashboardContent() {
                                     href={`/student/courses/${enrollment.course_id}`}
                                     className="bg-card dark:bg-gray-900 rounded-lg shadow-soft hover:shadow-medium transition-all hover-lift border border-border"
                                 >
-                                    <div className="h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-                                        <span className="text-white text-5xl">📚</span>
+                                    {/* Course Thumbnail */}
+                                    <div className="h-40 rounded-t-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
+                                        {enrollment.courses.thumbnail_url != null && enrollment.courses.thumbnail_url !== '' ? (
+                                            <img
+                                                src={enrollment.courses.thumbnail_url}
+                                                alt={enrollment.courses.title}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<span class="flex items-center justify-center h-full text-white text-5xl">📚</span>';
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="flex items-center justify-center h-full text-white text-5xl">📚</span>
+                                        )}
                                     </div>
                                     <div className="p-4 md:p-6">
                                         <h3 className="font-semibold text-foreground mb-2 text-base md:text-lg">

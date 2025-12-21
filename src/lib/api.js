@@ -181,6 +181,7 @@ export const lectureAPI = {
     delete: (id) => api.delete(`/lectures/${id}`),
     getProgress: (id) => api.get(`/lectures/${id}/progress`),
     updateProgress: (id, data) => api.post(`/lectures/${id}/progress`, data),
+    transfer: (data) => api.post('/lectures/transfer', data),
 };
 
 export const chapterAPI = {

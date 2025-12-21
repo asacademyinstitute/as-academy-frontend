@@ -6,6 +6,9 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { userAPI, authAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import { DashboardNav } from '@/components/ui/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 function ProfileContent() {
     const router = useRouter();
@@ -69,56 +72,22 @@ function ProfileContent() {
         router.push('/');
     };
 
+    const navItems = [
+        { label: 'My Courses', href: '/student/dashboard', icon: <BookOpen className="w-5 h-5" /> },
+        { label: 'Certificates', href: '/student/certificates', icon: <Award className="w-5 h-5" /> },
+        { label: 'Profile', href: '/student/profile', icon: <User className="w-5 h-5" /> },
+        { label: 'Browse Courses', href: '/courses', icon: <ShoppingBag className="w-5 h-5" /> },
+    ];
+
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Welcome, {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/student/dashboard"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            My Courses
-                        </Link>
-                        <Link
-                            href="/student/certificates"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Certificates
-                        </Link>
-                        <Link
-                            href="/student/profile"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Profile
-                        </Link>
-                        <Link
-                            href="/courses"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Browse Courses
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <DashboardNav
+                brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
+                user={{ name: user?.name || '', email: user?.email }}
+                navItems={navItems}
+                onLogout={handleLogout}
+                actions={<ThemeToggle />}
+            />
 
             {/* Content */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
