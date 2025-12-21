@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import TeacherMobileNav from '@/components/TeacherMobileNav';
 import useAuthStore from '@/store/authStore';
 import { courseRequestAPI } from '@/lib/api';
 
@@ -88,42 +88,10 @@ function TeacherRequestCourseContent() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Teacher
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Teacher: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link href="/teacher/dashboard" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Dashboard
-                        </Link>
-                        <Link href="/teacher/courses" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            My Courses
-                        </Link>
-                        <Link href="/teacher/request-course" className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium">
-                            Request New Course
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <TeacherMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 <div className="grid md:grid-cols-2 gap-8">
                     {/* Request Form */}
                     <div className="bg-white rounded-lg shadow-md p-6">

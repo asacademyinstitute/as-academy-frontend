@@ -8,7 +8,7 @@ export default function TeacherMobileNav({ user, onLogout }) {
 
     const navLinks = [
         { href: '/teacher/dashboard', label: 'My Courses' },
-        { href: '/teacher/requested-courses', label: 'My Requested Courses' },
+        { href: '/teacher/request-course', label: 'Request Course' },
         { href: '/teacher/students', label: 'Students' },
         { href: '/teacher/live-classes', label: 'Live Classes' },
         { href: '/teacher/profile', label: 'Profile' },
