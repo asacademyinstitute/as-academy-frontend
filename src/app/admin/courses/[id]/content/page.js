@@ -82,14 +82,14 @@ function AdminCourseContentContent() {
     };
 
     const handleDownload = async (lecture) => {
-        if (!lecture.file_url) {
+        if (!lecture.url) {
             alert('No file URL available for this lecture');
             return;
         }
 
         try {
             // Open file URL in new tab for download
-            window.open(lecture.file_url, '_blank');
+            window.open(lecture.url, '_blank');
         } catch (error) {
             console.error('Error downloading lecture:', error);
             alert('Failed to download lecture');
@@ -288,14 +288,14 @@ function AdminCourseContentContent() {
                                                                 </p>
                                                                 <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
                                                                     {lecture.type === 'video' ? 'Video' : 'PDF'} Lecture
-                                                                    {lecture.file_url && ' • Has file'}
+                                                                    {lecture.url && ' • Has file'}
                                                                 </p>
                                                             </div>
 
                                                             {/* Download Button */}
                                                             <button
                                                                 onClick={() => handleDownload(lecture)}
-                                                                disabled={!lecture.file_url}
+                                                                disabled={!lecture.url}
                                                                 className="flex-shrink-0 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm"
                                                             >
                                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
