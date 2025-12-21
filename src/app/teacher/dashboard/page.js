@@ -73,6 +73,7 @@ function TeacherDashboardContent() {
 
     const navItems = [
         { label: 'My Courses', href: '/teacher/dashboard', icon: <BookOpen className="w-5 h-5" /> },
+        { label: 'My Requested Courses', href: '/teacher/requested-courses', icon: <BookOpen className="w-5 h-5" /> },
         { label: 'Students', href: '/teacher/students', icon: <Users className="w-5 h-5" /> },
         { label: 'Live Classes', href: '/teacher/live-classes', icon: <Video className="w-5 h-5" /> },
         { label: 'Profile', href: '/teacher/profile', icon: <User className="w-5 h-5" /> },

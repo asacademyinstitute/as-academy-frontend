@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import TeacherMobileNav from '@/components/TeacherMobileNav';
 import { userAPI, authAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 
@@ -71,58 +71,11 @@ function TeacherProfileContent() {
     };
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Teacher
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Welcome, {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/teacher/dashboard"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            My Courses
-                        </Link>
-                        <Link
-                            href="/teacher/students"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Students
-                        </Link>
-                        <Link
-                            href="/teacher/live-classes"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Live Classes
-                        </Link>
-                        <Link
-                            href="/teacher/profile"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Profile
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gray-50">
+            <TeacherMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 <div className="grid md:grid-cols-2 gap-6">
                     {/* Profile Information */}
                     <div className="bg-white rounded-lg shadow-md p-6">
