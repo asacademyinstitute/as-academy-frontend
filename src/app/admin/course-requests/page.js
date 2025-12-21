@@ -139,7 +139,7 @@ function AdminCourseRequestsContent() {
                 {/* Requests Table */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="px-6 py-4 border-b bg-gray-50">
-                        <h2 className="text-xl font-bold text-gray-900">Course Requests</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Course Requests</h2>
                     </div>
 
                     {error && (
@@ -172,17 +172,17 @@ function AdminCourseRequestsContent() {
                                         {requests.map((request) => (
                                             <tr key={request.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900">{request.users?.name}</div>
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{request.users?.name}</div>
                                                     <div className="text-sm text-gray-500">{request.users?.email}</div>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900">{request.title}</div>
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-white">{request.title}</div>
                                                     <div className="text-xs text-gray-500 truncate max-w-xs">{request.description}</div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                     ₹{request.price}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                     {request.validity_days} days
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -193,7 +193,7 @@ function AdminCourseRequestsContent() {
                                                         {request.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                                                     {new Date(request.created_at).toLocaleDateString()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
@@ -238,7 +238,7 @@ function AdminCourseRequestsContent() {
                                     <div key={request.id} className="p-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex-1">
-                                                <h3 className="text-base font-semibold text-gray-900">{request.title}</h3>
+                                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{request.title}</h3>
                                                 <p className="text-xs text-gray-600 mt-1 line-clamp-2">{request.description}</p>
                                             </div>
                                             <span className={`px-2 py-1 text-xs rounded whitespace-nowrap ml-2 ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -251,7 +251,7 @@ function AdminCourseRequestsContent() {
 
                                         <div className="bg-gray-50 rounded-lg p-3 mb-3">
                                             <div className="text-xs text-gray-600 mb-1">Teacher</div>
-                                            <div className="text-sm font-medium text-gray-900">{request.users?.name}</div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{request.users?.name}</div>
                                             <div className="text-xs text-gray-500">{request.users?.email}</div>
                                         </div>
 
@@ -266,7 +266,7 @@ function AdminCourseRequestsContent() {
                                             </div>
                                             <div className="bg-gray-50 rounded-lg p-3 text-center">
                                                 <div className="text-xs text-gray-600 mb-1">Date</div>
-                                                <div className="text-xs font-medium text-gray-900">
+                                                <div className="text-xs font-medium text-gray-900 dark:text-white">
                                                     {new Date(request.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
                                                 </div>
                                             </div>

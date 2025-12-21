@@ -64,7 +64,7 @@ function AdminCoursesContent() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header with Actions */}
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900">All Courses</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">All Courses</h2>
                     <Link
                         href="/admin/courses/create"
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -160,7 +160,7 @@ function AdminCoursesContent() {
                                                         />
                                                     )}
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                                                             {course.title}
                                                         </div>
                                                         <div className="text-sm text-gray-500">
@@ -170,13 +170,13 @@ function AdminCoursesContent() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{course.category}</div>
+                                                <div className="text-sm text-gray-900 dark:text-white">{course.category}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">₹{course.price}</div>
+                                                <div className="text-sm text-gray-900 dark:text-white">₹{course.price}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{course.duration} days</div>
+                                                <div className="text-sm text-gray-900 dark:text-white">{course.duration} days</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'

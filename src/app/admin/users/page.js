@@ -123,10 +123,10 @@ function AdminUsersContent() {
                                     {users.map((u) => (
                                         <tr key={u.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">{u.name}</div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{u.name}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600">{u.email}</div>
+                                                <div className="text-sm text-gray-600 dark:text-gray-400">{u.email}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs rounded capitalize ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
@@ -142,7 +142,7 @@ function AdminUsersContent() {
                                                     {u.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                                                 {formatDate(u.created_at)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
@@ -162,7 +162,7 @@ function AdminUsersContent() {
                                                 )}
                                                 <Link
                                                     href={`/admin/users/${u.id}`}
-                                                    className="text-gray-600 hover:text-gray-700"
+                                                    className="text-gray-600 hover:text-gray-700 dark:text-gray-300"
                                                 >
                                                     View
                                                 </Link>

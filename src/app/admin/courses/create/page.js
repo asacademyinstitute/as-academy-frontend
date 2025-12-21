@@ -88,7 +88,7 @@ function CreateCourseContent() {
                             AS ACADEMY - Admin
                         </h1>
                         <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
+                            <span className="text-gray-700 dark:text-gray-300">Admin: {user?.name}</span>
                             <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
                                 Logout
                             </button>
