@@ -84,6 +84,16 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Dark mode color scheme */
+  html.dark {
+    color-scheme: dark;
+  }
+
+  /* Ensure text is always visible in dark mode */
+  html.dark body {
+    @apply bg-gray-950 text-white;
+  }
+
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
