@@ -202,30 +202,28 @@ export default function CourseDetailPage() {
                                         </span>
                                     </button>
                                     {contentExpanded && (
-                                        {
-                                            course.chapters && course.chapters.length > 0 ? (
-                                                <div className="space-y-4">
-                                                    {course.chapters.map((chapter, idx) => (
-                                                        <div key={chapter.id} className="border rounded-lg p-4">
-                                                            <h4 className="font-semibold text-gray-900 dark:text-white">
-                                                                {idx + 1}. {chapter.title}
-                                                            </h4>
-                                                            {chapter.lectures && chapter.lectures.length > 0 && (
-                                                                <ul className="mt-2 space-y-1 ml-4">
-                                                                    {chapter.lectures.map((lecture) => (
-                                                                        <li key={lecture.id} className="text-gray-600 dark:text-gray-400 text-sm">
-                                                                            • {lecture.title}
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 dark:text-gray-400">No content available yet</p>
-                                            )
-                                        }
+                                        course.chapters && course.chapters.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {course.chapters.map((chapter, idx) => (
+                                                    <div key={chapter.id} className="border rounded-lg p-4">
+                                                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                                                            {idx + 1}. {chapter.title}
+                                                        </h4>
+                                                        {chapter.lectures && chapter.lectures.length > 0 && (
+                                                            <ul className="mt-2 space-y-1 ml-4">
+                                                                {chapter.lectures.map((lecture) => (
+                                                                    <li key={lecture.id} className="text-gray-600 dark:text-gray-400 text-sm">
+                                                                        • {lecture.title}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500 dark:text-gray-400">No content available yet</p>
+                                        )
                                     )}
                                 </div>
                             </div>
