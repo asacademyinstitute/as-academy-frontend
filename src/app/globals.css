@@ -89,9 +89,26 @@
     color-scheme: dark;
   }
 
-  /* Ensure text is always visible in dark mode */
+  /* Ensure maximum contrast for text readability in dark mode */
   html.dark body {
     @apply bg-gray-950 text-white;
+  }
+
+  /* High contrast text colors for dark mode */
+  html.dark h1,
+  html.dark h2,
+  html.dark h3,
+  html.dark h4,
+  html.dark h5,
+  html.dark h6 {
+    @apply text-white;
+  }
+
+  /* Ensure all paragraphs and text are readable */
+  html.dark p,
+  html.dark span,
+  html.dark div {
+    color: inherit;
   }
 
   /* Smooth scrolling */
