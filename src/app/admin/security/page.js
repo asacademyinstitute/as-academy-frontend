@@ -24,10 +24,10 @@ function AdminSecurityContent() {
             const token = localStorage.getItem('accessToken');
 
             const [activityRes, settingsRes] = await Promise.all([
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/activity?studentsOnly=true`, {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/activity?studentsOnly=true`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/settings`, {
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/settings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
@@ -69,7 +69,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/settings`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/settings`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/reset-all`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/reset-all`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -125,7 +125,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/${userId}/force-logout`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/${userId}/force-logout`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -151,7 +151,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/${userId}/reset`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/${userId}/reset`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -177,7 +177,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/status`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ function AdminSecurityContent() {
         setActionLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/devices/enforcement`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/devices/enforcement`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -264,8 +264,8 @@ function AdminSecurityContent() {
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${settings.deviceTrackingEnabled
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-yellow-100 text-yellow-800'
+                                            ? 'bg-green-100 text-green-800'
+                                            : 'bg-yellow-100 text-yellow-800'
                                             }`}>
                                             {settings.deviceTrackingEnabled ? 'ENABLED' : 'DISABLED'}
                                         </span>
@@ -273,8 +273,8 @@ function AdminSecurityContent() {
                                             onClick={() => handleToggleEnforcement(!settings.deviceTrackingEnabled)}
                                             disabled={actionLoading}
                                             className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${settings.deviceTrackingEnabled
-                                                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                                                    : 'bg-green-600 hover:bg-green-700 text-white'
+                                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                                                : 'bg-green-600 hover:bg-green-700 text-white'
                                                 }`}
                                         >
                                             {settings.deviceTrackingEnabled ? 'Disable' : 'Enable'}
