@@ -63,7 +63,7 @@ function QuizTakeContent() {
 
     if (result) {
         return (
-            <div className="min-h-screen bg-background dark:bg-gray-950 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-background flex items-center justify-center p-4">
                 <div className="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
                     <div className="text-center">
                         <div className={`w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center ${result.passed ? 'bg-green-100' : 'bg-red-100'
@@ -117,7 +117,7 @@ function QuizTakeContent() {
     }
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background">
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="bg-white rounded-lg shadow-md p-8">
                     <div className="mb-8">
