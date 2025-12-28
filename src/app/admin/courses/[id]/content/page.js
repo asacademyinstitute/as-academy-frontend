@@ -17,8 +17,10 @@ function AdminCourseContentContent() {
     const [loading, setLoading] = useState(true);
     const [selectedLectures, setSelectedLectures] = useState([]);
     const [transferring, setTransferring] = useState(false);
-    const [allChapters, setAllChapters] = useState([]); // All chapters from all courses
-    const [targetChapterId, setTargetChapterId] = useState(''); // Changed from targetCourseId
+    const [courses, setCourses] = useState([]); // All other courses
+    const [targetCourseId, setTargetCourseId] = useState(''); // Selected course
+    const [targetCourseChapters, setTargetCourseChapters] = useState([]); // Chapters of selected course
+    const [targetChapterId, setTargetChapterId] = useState(''); // Selected chapter
     const [expandedChapters, setExpandedChapters] = useState({});
 
     useEffect(() => {
@@ -34,19 +36,7 @@ function AdminCourseContentContent() {
             ]);
             setCourse(courseRes.data.data);
             setChapters(chaptersRes.data.data || []);
-
-            // Fetch chapters from all other courses
-            const otherCourses = coursesRes.data.data.courses.filter(c => c.id !== params.id) || [];
-            const allChaptersData = [];
-            for (const course of otherCourses) {
-                const chapRes = await chapterAPI.getByCourse(course.id);
-                const courseChapters = (chapRes.data.data || []).map(ch => ({
-                    ...ch,
-                    courseName: course.title
-                }));
-                allChaptersData.push(...courseChapters);
-            }
-            setAllChapters(allChaptersData);
+            setCourses(coursesRes.data.data.courses.filter(c => c.id !== params.id) || []);
 
             // Auto-expand all chapters
             const expanded = {};
@@ -112,6 +102,24 @@ function AdminCourseContentContent() {
         }
     };
 
+    // Load chapters when course is selected
+    const handleCourseSelect = async (courseId) => {
+        setTargetCourseId(courseId);
+        setTargetChapterId(''); // Reset chapter selection
+
+        if (courseId) {
+            try {
+                const chapRes = await chapterAPI.getByCourse(courseId);
+                setTargetCourseChapters(chapRes.data.data || []);
+            } catch (error) {
+                console.error('Error fetching chapters:', error);
+                setTargetCourseChapters([]);
+            }
+        } else {
+            setTargetCourseChapters([]);
+        }
+    };
+
     const handleTransfer = async () => {
         if (selectedLectures.length === 0) {
             alert('Please select at least one lecture to transfer');
@@ -136,7 +144,9 @@ function AdminCourseContentContent() {
 
             alert('Lectures transferred successfully!');
             setSelectedLectures([]);
+            setTargetCourseId('');
             setTargetChapterId('');
+            setTargetCourseChapters([]);
             fetchData();
         } catch (error) {
             console.error('Error transferring lectures:', error);
@@ -194,18 +204,31 @@ function AdminCourseContentContent() {
                                 </button>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                                {/* Step 1: Select Course */}
                                 <select
-                                    value={targetChapterId}
-                                    onChange={(e) => setTargetChapterId(e.target.value)}
+                                    value={targetCourseId}
+                                    onChange={(e) => handleCourseSelect(e.target.value)}
                                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                 >
-                                    <option value="">Select target chapter...</option>
-                                    {allChapters.map(ch => (
-                                        <option key={ch.id} value={ch.id}>
-                                            {ch.courseName} → {ch.title}
-                                        </option>
+                                    <option value="">1. Select Course...</option>
+                                    {courses.map(c => (
+                                        <option key={c.id} value={c.id}>{c.title}</option>
                                     ))}
                                 </select>
+
+                                {/* Step 2: Select Chapter (only if course selected) */}
+                                {targetCourseId && (
+                                    <select
+                                        value={targetChapterId}
+                                        onChange={(e) => setTargetChapterId(e.target.value)}
+                                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                    >
+                                        <option value="">2. Select Chapter...</option>
+                                        {targetCourseChapters.map(ch => (
+                                            <option key={ch.id} value={ch.id}>{ch.title}</option>
+                                        ))}
+                                    </select>
+                                )}
                                 <button
                                     onClick={handleTransfer}
                                     disabled={transferring || !targetChapterId}
