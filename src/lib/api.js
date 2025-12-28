@@ -277,3 +277,14 @@ export const couponAPI = {
     validate: (code, courseId) => api.post('/coupons/validate', { code, courseId }),
     getStats: (id) => api.get(`/coupons/${id}/stats`),
 };
+
+// Top Rankers API
+export const topRankersAPI = {
+    getActive: () => api.get('/top-rankers'),
+    getAll: () => api.get('/top-rankers/admin'),
+    create: (data) => api.post('/top-rankers', data),
+    update: (id, data) => api.put(`/top-rankers/${id}`, data),
+    delete: (id) => api.delete(`/top-rankers/${id}`),
+    toggle: (id) => api.post(`/top-rankers/${id}/toggle`),
+};
+```

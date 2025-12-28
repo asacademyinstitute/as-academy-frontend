@@ -14,6 +14,7 @@ export default function AdminMobileNav({ user, onLogout }) {
         { href: '/admin/courses', label: 'Courses', icon: '📚' },
         { href: '/admin/payments', label: 'Payments', icon: '💳' },
         { href: '/admin/coupons', label: 'Coupons', icon: '🎫' },
+        { href: '/admin/top-rankers', label: 'Top Rankers', icon: '🏆' },
         { href: '/admin/course-requests', label: 'Course Requests', icon: '📝' },
         { href: '/admin/security', label: 'Security', icon: '🔒' },
         { href: '/admin/audit', label: 'Audit Logs', icon: '📋' },
