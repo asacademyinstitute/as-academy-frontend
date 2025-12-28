@@ -314,11 +314,11 @@ export default function TopRankersPage() {
                                             <button
                                                 onClick={() => handleToggle(ranker.id)}
                                                 className={`px-3 py-1 rounded-full text-xs font-semibold ${ranker.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
-                                                {ranker.is_active ? 'Active' : 'Inactive'}
+                                                {ranker.is_active ? '✓ Show on Homepage' : '✗ Hidden'}
                                             </button>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
