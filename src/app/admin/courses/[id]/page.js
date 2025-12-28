@@ -97,7 +97,7 @@ function EditCourseContent() {
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+        if (!confirm('⚠️ PERMANENT DELETE WARNING\n\nThis will delete:\n• Course from database\n• All chapters and lectures\n• All enrollments\n• Video/PDF files from B2 storage\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?')) {
             return;
         }
 
