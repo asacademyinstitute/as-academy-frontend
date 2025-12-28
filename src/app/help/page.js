@@ -34,6 +34,26 @@ export default function HelpCenterPage() {
                 <h1 className="text-4xl font-bold text-gray-900 mb-8">Help Center</h1>
 
                 <div className="space-y-8">
+                    {/* Video Tutorial Section */}
+                    <section className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-lg shadow-md">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-4">📹 Video Tutorial</h2>
+                        <p className="text-gray-700 mb-4">
+                            Need help purchasing a course? Watch our step-by-step video guide:
+                        </p>
+                        <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
+                            <iframe
+                                width="100%"
+                                height="100%"
+                                src="https://www.youtube.com/embed/F61IlfJvQPk"
+                                title="How to Purchase Course - AS Academy Tutorial"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="w-full h-full"
+                            ></iframe>
+                        </div>
+                    </section>
+
                     <section>
                         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Frequently Asked Questions</h2>
 
