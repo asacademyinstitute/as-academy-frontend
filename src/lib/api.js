@@ -287,4 +287,3 @@ export const topRankersAPI = {
     delete: (id) => api.delete(`/top-rankers/${id}`),
     toggle: (id) => api.post(`/top-rankers/${id}/toggle`),
 };
-```
