@@ -46,7 +46,7 @@ function EditCourseContent() {
                 level: course.level || 'beginner',
                 price: course.price || '',
                 duration: course.duration || '',
-                thumbnail: course.thumbnail || '',
+                thumbnail: course.thumbnail_url || '', // Fixed: use thumbnail_url from backend
                 status: course.status || 'draft',
             });
         } catch (err) {
