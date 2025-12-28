@@ -71,7 +71,16 @@ export default function TopRankersPage() {
             uploadFormData.append('folder', 'top-rankers');
 
             const response = await streamingAPI.uploadFile(uploadFormData);
-            return response.data.fileUrl;
+            console.log('Upload response:', response.data);
+
+            // Backend returns: { success: true, data: { fileUrl, fileName, ... } }
+            const fileUrl = response.data.data?.fileUrl || response.data.fileUrl;
+
+            if (!fileUrl) {
+                throw new Error('No file URL returned from upload');
+            }
+
+            return fileUrl;
         } catch (error) {
             console.error('Error uploading photo:', error);
             throw new Error('Failed to upload photo');
