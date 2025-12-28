@@ -102,9 +102,17 @@ function TeacherDashboardContent() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {courses.map((course) => (
                                 <div key={course.id} className="border border-border rounded-lg overflow-hidden hover:shadow-medium transition-all hover-lift bg-card">
-                                    <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <span className="text-white text-4xl">📚</span>
-                                    </div>
+                                    {course.thumbnail_url ? (
+                                        <img
+                                            src={course.thumbnail_url}
+                                            alt={course.title}
+                                            className="h-32 w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-32 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                            <span className="text-white text-4xl">📚</span>
+                                        </div>
+                                    )}
                                     <div className="p-4">
                                         <h3 className="font-semibold text-foreground mb-2 text-base md:text-lg">{course.title}</h3>
                                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{course.description}</p>

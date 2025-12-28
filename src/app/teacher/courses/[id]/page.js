@@ -23,6 +23,7 @@ function TeacherCourseManageContent() {
     // Preview state for video and PDF
     const [previewModal, setPreviewModal] = useState(null);
     const [previewContent, setPreviewContent] = useState(null);
+    const [previewSignedUrl, setPreviewSignedUrl] = useState(null);
 
     useEffect(() => {
         fetchCourseData();
@@ -190,14 +191,25 @@ function TeacherCourseManageContent() {
         }
     };
 
-    const handlePreview = (lecture) => {
-        setPreviewContent(lecture);
-        setPreviewModal(lecture.type);
+    const handlePreview = async (lecture) => {
+        try {
+            setPreviewContent(lecture);
+            setPreviewModal(lecture.type);
+
+            // Fetch signed URL for preview
+            const response = await streamingAPI.getAdminDownloadUrl(lecture.id);
+            setPreviewSignedUrl(response.data.data.url);
+        } catch (error) {
+            console.error('Error fetching preview URL:', error);
+            alert('Failed to load preview. Please try again.');
+            closePreview();
+        }
     };
 
     const closePreview = () => {
         setPreviewModal(null);
         setPreviewContent(null);
+        setPreviewSignedUrl(null);
     };
 
     const handleSaveLiveLink = async () => {
@@ -547,20 +559,32 @@ function TeacherCourseManageContent() {
 
                                 {/* Video Preview */}
                                 {previewModal === 'video' && (
-                                    <video
-                                        src={previewContent.file_url}
-                                        controls
-                                        className="w-full rounded"
-                                    />
+                                    previewSignedUrl ? (
+                                        <video
+                                            src={previewSignedUrl}
+                                            controls
+                                            className="w-full rounded"
+                                        />
+                                    ) : (
+                                        <div className="flex justify-center py-12">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                        </div>
+                                    )
                                 )}
 
                                 {/* PDF Preview */}
                                 {previewModal === 'pdf' && (
-                                    <iframe
-                                        src={previewContent.file_url}
-                                        className="w-full h-[70vh] rounded border"
-                                        title="PDF Preview"
-                                    />
+                                    previewSignedUrl ? (
+                                        <iframe
+                                            src={previewSignedUrl}
+                                            className="w-full h-[70vh] rounded border"
+                                            title="PDF Preview"
+                                        />
+                                    ) : (
+                                        <div className="flex justify-center py-12">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                        </div>
+                                    )
                                 )}
                             </div>
                         </div>
