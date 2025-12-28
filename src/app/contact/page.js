@@ -21,7 +21,7 @@ export default function ContactPage() {
 
     const navActions = (
         <>
-            
+
             <Link
                 href="/signup"
                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
@@ -75,6 +75,30 @@ export default function ContactPage() {
                         <p className="text-gray-600">
                             We typically respond within 24 hours
                         </p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-4">Follow us on Instagram</h3>
+                        <a
+                            href="https://www.instagram.com/asacademy_india/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                        >
+                            @asacademy_india
+                        </a>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-4">Subscribe on YouTube</h3>
+                        <a
+                            href="https://www.youtube.com/@ASAcademyIndia"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 hover:underline"
+                        >
+                            @ASAcademyIndia
+                        </a>
                     </div>
                 </div>
 
