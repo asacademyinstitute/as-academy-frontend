@@ -14,6 +14,7 @@ export default function TopRankersPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingRanker, setEditingRanker] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [photoUrls, setPhotoUrls] = useState({}); // Store signed URLs for photos
 
     const [formData, setFormData] = useState({
         name: '',
@@ -32,7 +33,24 @@ export default function TopRankersPage() {
     const fetchRankers = async () => {
         try {
             const response = await topRankersAPI.getAll();
-            setRankers(response.data.data || []);
+            const rankersData = response.data.data || [];
+            setRankers(rankersData);
+
+            // Fetch signed URLs for all photos
+            const urls = {};
+            for (const ranker of rankersData) {
+                if (ranker.photo_url) {
+                    try {
+                        // Use streaming API to get signed URL
+                        const urlResponse = await streamingAPI.getSignedUrl(ranker.photo_url);
+                        urls[ranker.id] = urlResponse.data.url;
+                    } catch (err) {
+                        console.error(`Failed to get signed URL for ${ranker.photo_url}:`, err);
+                        urls[ranker.id] = '/default-avatar.png';
+                    }
+                }
+            }
+            setPhotoUrls(urls);
         } catch (error) {
             console.error('Error fetching rankers:', error);
             alert('Failed to fetch top rankers');
@@ -155,7 +173,8 @@ export default function TopRankersPage() {
             rank: ranker.rank.toString(),
             exam_name: ranker.exam_name || ''
         });
-        setPhotoPreview(''); // Will fetch signed URL when needed
+        // Set existing photo preview from signed URLs
+        setPhotoPreview(photoUrls[ranker.id] || '/default-avatar.png');
         setShowModal(true);
     };
 
@@ -275,7 +294,7 @@ export default function TopRankersPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
                                                 <img
-                                                    src={photoPreview || '/default-avatar.png'}
+                                                    src={photoUrls[ranker.id] || '/default-avatar.png'}
                                                     alt={ranker.name}
                                                     className="h-full w-full object-cover"
                                                     onError={(e) => e.target.src = '/default-avatar.png'}
