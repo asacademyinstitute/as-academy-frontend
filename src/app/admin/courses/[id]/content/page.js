@@ -17,8 +17,8 @@ function AdminCourseContentContent() {
     const [loading, setLoading] = useState(true);
     const [selectedLectures, setSelectedLectures] = useState([]);
     const [transferring, setTransferring] = useState(false);
-    const [courses, setCourses] = useState([]);
-    const [targetCourseId, setTargetCourseId] = useState('');
+    const [allChapters, setAllChapters] = useState([]); // All chapters from all courses
+    const [targetChapterId, setTargetChapterId] = useState(''); // Changed from targetCourseId
     const [expandedChapters, setExpandedChapters] = useState({});
 
     useEffect(() => {
@@ -34,7 +34,19 @@ function AdminCourseContentContent() {
             ]);
             setCourse(courseRes.data.data);
             setChapters(chaptersRes.data.data || []);
-            setCourses(coursesRes.data.data.courses.filter(c => c.id !== params.id) || []);
+
+            // Fetch chapters from all other courses
+            const otherCourses = coursesRes.data.data.courses.filter(c => c.id !== params.id) || [];
+            const allChaptersData = [];
+            for (const course of otherCourses) {
+                const chapRes = await chapterAPI.getByCourse(course.id);
+                const courseChapters = (chapRes.data.data || []).map(ch => ({
+                    ...ch,
+                    courseName: course.title
+                }));
+                allChaptersData.push(...courseChapters);
+            }
+            setAllChapters(allChaptersData);
 
             // Auto-expand all chapters
             const expanded = {};
@@ -106,12 +118,12 @@ function AdminCourseContentContent() {
             return;
         }
 
-        if (!targetCourseId) {
-            alert('Please select a target course');
+        if (!targetChapterId) {
+            alert('Please select a target chapter');
             return;
         }
 
-        if (!confirm(`Are you sure you want to transfer ${selectedLectures.length} lecture(s) to the selected course?`)) {
+        if (!confirm(`Are you sure you want to transfer ${selectedLectures.length} lecture(s) to the selected chapter?`)) {
             return;
         }
 
@@ -119,12 +131,12 @@ function AdminCourseContentContent() {
         try {
             await lectureAPI.transfer({
                 lecture_ids: selectedLectures,
-                target_chapter_id: targetCourseId
+                target_chapter_id: targetChapterId
             });
 
             alert('Lectures transferred successfully!');
             setSelectedLectures([]);
-            setTargetCourseId('');
+            setTargetChapterId('');
             fetchData();
         } catch (error) {
             console.error('Error transferring lectures:', error);
@@ -183,18 +195,20 @@ function AdminCourseContentContent() {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                                 <select
-                                    value={targetCourseId}
-                                    onChange={(e) => setTargetCourseId(e.target.value)}
+                                    value={targetChapterId}
+                                    onChange={(e) => setTargetChapterId(e.target.value)}
                                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                                 >
-                                    <option value="">Select target course...</option>
-                                    {courses.map(c => (
-                                        <option key={c.id} value={c.id}>{c.title}</option>
+                                    <option value="">Select target chapter...</option>
+                                    {allChapters.map(ch => (
+                                        <option key={ch.id} value={ch.id}>
+                                            {ch.courseName} → {ch.title}
+                                        </option>
                                     ))}
                                 </select>
                                 <button
                                     onClick={handleTransfer}
-                                    disabled={transferring || !targetCourseId}
+                                    disabled={transferring || !targetChapterId}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {transferring ? 'Transferring...' : 'Transfer Selected'}
