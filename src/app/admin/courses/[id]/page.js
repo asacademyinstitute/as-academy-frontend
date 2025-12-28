@@ -39,6 +39,8 @@ function EditCourseContent() {
             const response = await coursesAPI.getById(courseId);
             const course = response.data.data;
 
+            console.log('📝 Course data received:', course); // Debug log
+
             setFormData({
                 title: course.title || '',
                 description: course.description || '',
