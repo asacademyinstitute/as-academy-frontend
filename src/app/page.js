@@ -1,18 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import useAuthStore from '@/store/authStore';
 import { ResponsiveNav } from '@/components/ui/navigation';
 import OrganizationSchema from '@/components/seo/OrganizationSchema';
+import { topRankersAPI, streamingAPI } from '@/lib/api';
 
 
 
 export default function HomePage() {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
+    const [topRankers, setTopRankers] = useState([]);
+    const [rankerPhotos, setRankerPhotos] = useState({});
+    const [loadingRankers, setLoadingRankers] = useState(true);
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -26,6 +30,38 @@ export default function HomePage() {
             }
         }
     }, [isAuthenticated, user, router]);
+
+    // Fetch top rankers
+    useEffect(() => {
+        const fetchTopRankers = async () => {
+            try {
+                const response = await topRankersAPI.getActive();
+                const rankers = response.data.data || [];
+                setTopRankers(rankers);
+
+                // Fetch photos for rankers
+                const photos = {};
+                for (const ranker of rankers) {
+                    if (ranker.photo_url) {
+                        try {
+                            const urlResponse = await streamingAPI.getSignedUrl(ranker.photo_url);
+                            photos[ranker.id] = urlResponse.data.url;
+                        } catch (err) {
+                            console.error(`Failed to get photo for ${ranker.name}:`, err);
+                            photos[ranker.id] = '/default-avatar.png';
+                        }
+                    }
+                }
+                setRankerPhotos(photos);
+            } catch (error) {
+                console.error('Error fetching top rankers:', error);
+            } finally {
+                setLoadingRankers(false);
+            }
+        };
+
+        fetchTopRankers();
+    }, []);
 
     const navItems = [
         { label: 'Courses', href: '/courses' },
@@ -147,6 +183,79 @@ export default function HomePage() {
                     </motion.div>
                 </div>
             </section>
+
+            {/* Top Rankers Section */}
+            {!loadingRankers && topRankers.length > 0 && (
+                <section className="py-12 md:py-20 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        viewport={{ once: true }}
+                        className="text-center mb-12"
+                    >
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            🏆 Our Top Rankers
+                        </h2>
+                        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                            Celebrating the outstanding achievements of our students
+                        </p>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+                        {topRankers.map((ranker, index) => (
+                            <motion.div
+                                key={ranker.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.1 }}
+                                viewport={{ once: true }}
+                                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group hover:-translate-y-2"
+                            >
+                                {/* Rank Badge */}
+                                <div className="relative">
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                                            <span className="text-2xl">#{ranker.rank}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Photo */}
+                                    <div className="relative h-48 bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src={rankerPhotos[ranker.id] || '/default-avatar.png'}
+                                            alt={ranker.name}
+                                            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg group-hover:scale-110 transition-transform duration-300"
+                                            onError={(e) => e.target.src = '/default-avatar.png'}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Details */}
+                                <div className="p-6 text-center">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                        {ranker.name}
+                                    </h3>
+
+                                    {ranker.exam_name && (
+                                        <p className="text-sm text-gray-600 mb-3">
+                                            {ranker.exam_name}
+                                        </p>
+                                    )}
+
+                                    {/* Percentage Badge */}
+                                    <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-lg">{ranker.percentage}%</span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* CTA Section */}
             <section className="gradient-blue-purple py-12 md:py-16">
