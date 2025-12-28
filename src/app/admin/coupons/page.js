@@ -101,9 +101,12 @@ function AdminCouponsContent() {
         if (!confirm('Are you sure you want to delete this coupon?')) return;
         try {
             await couponAPI.delete(id);
+            alert('Coupon deleted successfully!');
             fetchData();
         } catch (error) {
-            alert('Failed to delete coupon');
+            const errorMessage = error.response?.data?.message || 'Failed to delete coupon';
+            alert(errorMessage);
+            console.error('Delete error:', error);
         }
     };
 
