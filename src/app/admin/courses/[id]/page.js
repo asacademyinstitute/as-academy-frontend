@@ -106,7 +106,9 @@ function EditCourseContent() {
             router.push('/admin/courses');
         } catch (err) {
             console.error('Error deleting course:', err);
-            setError(err.response?.data?.message || 'Failed to delete course');
+            const errorMessage = err.response?.data?.message || 'Failed to delete course';
+            setError(errorMessage);
+            alert(errorMessage); // Show error in alert too
         }
     };
 
