@@ -78,7 +78,7 @@ function AdminDashboardContent() {
                 {/* Quick Actions */}
                 <div className="bg-white rounded-lg shadow p-6 mb-8">
                     <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                         <Link
                             href="/admin/users/create"
                             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 text-center"
@@ -90,12 +90,6 @@ function AdminDashboardContent() {
                             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 text-center"
                         >
                             + Add Course
-                        </Link>
-                        <Link
-                            href="/admin/enrollments/create"
-                            className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 text-center"
-                        >
-                            + Enroll Student
                         </Link>
                     </div>
                 </div>
