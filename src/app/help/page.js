@@ -12,7 +12,7 @@ export default function HelpCenterPage() {
 
     const navActions = (
         <>
-            
+
             <Link
                 href="/signup"
                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
@@ -64,8 +64,8 @@ export default function HelpCenterPage() {
 
                             <div className="bg-white p-6 rounded-lg shadow-md">
                                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Can I get a refund?</h3>
-                                <p className="text-gray-600">
-                                    We offer refunds within 7 days of purchase if you haven't accessed more than 20% of the course content.
+                                <p className="text-gray-700">
+                                    We offer 50% refund within 7 days of purchase if you haven't accessed more than 20% of the course content.
                                     Contact our support team for refund requests.
                                 </p>
                             </div>

@@ -12,7 +12,7 @@ export default function TermsOfServicePage() {
 
     const navActions = (
         <>
-            
+
             <Link
                 href="/signup"
                 className="bg-primary text-primary-foreground px-4 md:px-6 py-2 rounded-lg font-medium hover:bg-primary/90 transition-all touch-target text-sm md:text-base"
@@ -71,13 +71,13 @@ export default function TermsOfServicePage() {
 
                     <section className="bg-white p-6 rounded-lg shadow-md">
                         <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Payments and Refunds</h2>
-                        <p className="text-gray-600 mb-4">
-                            All course fees are listed in Indian Rupees (INR). We offer:
-                        </p>
-                        <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-                            <li>Secure payment processing through trusted payment gateways</li>
-                            <li>Refunds within 7 days if less than 20% of course content has been accessed</li>
+                        <ul className="list-disc list-inside space-y-2 text-gray-700">
+                            <li>All payments are processed securely through our payment gateway</li>
+                            <li>Course prices are subject to change without notice</li>
+                            <li>Promotional discounts are valid for limited periods</li>
+                            <li>50% refund available within 7 days if less than 20% of course content has been accessed</li>
                             <li>No refunds after the 7-day period or if more than 20% content is accessed</li>
+                            <li>Refund processing may take 7-10 business days</li>
                         </ul>
                     </section>
 
