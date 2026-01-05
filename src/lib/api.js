@@ -287,4 +287,6 @@ export const topRankersAPI = {
     update: (id, data) => api.put(`/top-rankers/${id}`, data),
     delete: (id) => api.delete(`/top-rankers/${id}`),
     toggle: (id) => api.post(`/top-rankers/${id}/toggle`),
+    getVisibility: () => api.get('/top-rankers/visibility'),
+    setVisibility: (enabled) => api.post('/top-rankers/visibility', { enabled }),
 };

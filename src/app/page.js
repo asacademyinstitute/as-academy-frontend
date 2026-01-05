@@ -17,6 +17,7 @@ export default function HomePage() {
     const [topRankers, setTopRankers] = useState([]);
     const [rankerPhotos, setRankerPhotos] = useState({});
     const [loadingRankers, setLoadingRankers] = useState(true);
+    const [showRankersSection, setShowRankersSection] = useState(false);
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -31,28 +32,36 @@ export default function HomePage() {
         }
     }, [isAuthenticated, user, router]);
 
-    // Fetch top rankers
+    // Fetch top rankers and visibility setting
     useEffect(() => {
         const fetchTopRankers = async () => {
             try {
-                const response = await topRankersAPI.getActive();
-                const rankers = response.data.data || [];
-                setTopRankers(rankers);
+                // Fetch visibility setting
+                const visibilityResponse = await topRankersAPI.getVisibility();
+                const isVisible = visibilityResponse.data.data.enabled;
+                setShowRankersSection(isVisible);
 
-                // Fetch photos for rankers
-                const photos = {};
-                for (const ranker of rankers) {
-                    if (ranker.photo_url) {
-                        try {
-                            const urlResponse = await streamingAPI.getSignedUrl(ranker.photo_url);
-                            photos[ranker.id] = urlResponse.data.url;
-                        } catch (err) {
-                            console.error(`Failed to get photo for ${ranker.name}:`, err);
-                            photos[ranker.id] = '/default-avatar.png';
+                // Only fetch rankers if section is visible
+                if (isVisible) {
+                    const response = await topRankersAPI.getActive();
+                    const rankers = response.data.data || [];
+                    setTopRankers(rankers);
+
+                    // Fetch photos for rankers
+                    const photos = {};
+                    for (const ranker of rankers) {
+                        if (ranker.photo_url) {
+                            try {
+                                const urlResponse = await streamingAPI.getSignedUrl(ranker.photo_url);
+                                photos[ranker.id] = urlResponse.data.url;
+                            } catch (err) {
+                                console.error(`Failed to get photo for ${ranker.name}:`, err);
+                                photos[ranker.id] = '/default-avatar.png';
+                            }
                         }
                     }
+                    setRankerPhotos(photos);
                 }
-                setRankerPhotos(photos);
             } catch (error) {
                 console.error('Error fetching top rankers:', error);
             } finally {
@@ -185,7 +194,7 @@ export default function HomePage() {
             </section>
 
             {/* Top Rankers Section */}
-            {!loadingRankers && topRankers.length > 0 && (
+            {!loadingRankers && showRankersSection && topRankers.length > 0 && (
                 <section className="py-12 md:py-20 px-4 md:px-6 lg:px-8 max-w-7xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

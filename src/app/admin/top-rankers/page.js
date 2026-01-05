@@ -15,6 +15,8 @@ export default function TopRankersPage() {
     const [editingRanker, setEditingRanker] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [photoUrls, setPhotoUrls] = useState({}); // Store signed URLs for photos
+    const [showOnHomepage, setShowOnHomepage] = useState(false);
+    const [togglingVisibility, setTogglingVisibility] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -28,6 +30,7 @@ export default function TopRankersPage() {
 
     useEffect(() => {
         fetchRankers();
+        fetchVisibilitySetting();
     }, []);
 
     const fetchRankers = async () => {
@@ -56,6 +59,30 @@ export default function TopRankersPage() {
             alert('Failed to fetch top rankers');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchVisibilitySetting = async () => {
+        try {
+            const response = await topRankersAPI.getVisibility();
+            setShowOnHomepage(response.data.data.enabled);
+        } catch (error) {
+            console.error('Error fetching visibility setting:', error);
+        }
+    };
+
+    const handleToggleVisibility = async () => {
+        setTogglingVisibility(true);
+        try {
+            const newValue = !showOnHomepage;
+            await topRankersAPI.setVisibility(newValue);
+            setShowOnHomepage(newValue);
+            alert(`Top Rankers section will now be ${newValue ? 'shown' : 'hidden'} on homepage`);
+        } catch (error) {
+            console.error('Error toggling visibility:', error);
+            alert('Failed to update visibility setting');
+        } finally {
+            setTogglingVisibility(false);
         }
     };
 
@@ -240,14 +267,28 @@ export default function TopRankersPage() {
         <div className="min-h-screen bg-background">
             <AdminMobileNav user={user} onLogout={handleLogout} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <h1 className="text-3xl font-bold">Top Rankers Management</h1>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        + Add Top Ranker
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={handleToggleVisibility}
+                            disabled={togglingVisibility}
+                            className={`px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${showOnHomepage
+                                    ? 'bg-green-600 text-white hover:bg-green-700'
+                                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                                }`}
+                        >
+                            {togglingVisibility ? 'Updating...' : (
+                                showOnHomepage ? '✓ Visible on Homepage' : '✗ Hidden on Homepage'
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            + Add Top Ranker
+                        </button>
+                    </div>
                 </div>
 
                 {/* Rankers Table */}
@@ -314,8 +355,8 @@ export default function TopRankersPage() {
                                             <button
                                                 onClick={() => handleToggle(ranker.id)}
                                                 className={`px-3 py-1 rounded-full text-xs font-semibold ${ranker.is_active
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-800'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
                                                 {ranker.is_active ? '✓ Show on Homepage' : '✗ Hidden'}
