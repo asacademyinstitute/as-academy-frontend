@@ -25,7 +25,17 @@ interface ResponsiveNavProps {
 
 export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNavProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+    const [scrolled, setScrolled] = React.useState(false);
     const pathname = usePathname();
+
+    // Detect scroll
+    React.useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Close mobile menu when route changes
     React.useEffect(() => {
@@ -46,10 +56,18 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
 
     return (
         <>
-            <nav className={cn(
-                "bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-border/40",
-                className
-            )}>
+            <motion.nav
+                initial={false}
+                animate={{
+                    backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.8)',
+                    boxShadow: scrolled ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                    "backdrop-blur-md sticky top-0 z-50 border-b border-border/40",
+                    className
+                )}
+            >
                 <div className="max-w-7xl mx-auto container-padding">
                     <div className="flex justify-between items-center h-16">
                         {/* Brand */}
@@ -92,7 +110,7 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
                         </button>
                     </div>
                 </div>
-            </nav>
+            </motion.nav>
 
             {/* Mobile Menu Overlay */}
             <AnimatePresence>
