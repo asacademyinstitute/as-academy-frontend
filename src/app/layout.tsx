@@ -32,23 +32,23 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: 'https://asacademy.in',
-    title: 'AS Academy | MSBTE K Scheme Computer Engineering Courses',
-    description: 'Leading platform for MSBTE K Scheme CO courses. Access diploma computer engineering courses, semester 6 papers, and question papers PDF.',
+    url: 'https://asacademy.site',
+    title: 'AS Academy | Best Online Courses for JEE, NEET & Competitive Exams',
+    description: 'Leading online learning platform for JEE, NEET, and competitive exam preparation. Expert-led courses with certificates and comprehensive study materials.',
     siteName: 'AS Academy',
     images: [
       {
         url: 'https://i.ibb.co/s9xkRzbw/favicon-ico.jpg',
         width: 1200,
         height: 630,
-        alt: 'AS Academy - MSBTE K Scheme Courses',
+        alt: 'AS Academy - Online Learning Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AS Academy | MSBTE K Scheme Computer Engineering Courses',
-    description: 'Leading platform for MSBTE K Scheme CO courses. Access diploma computer engineering courses and question papers.',
+    title: 'AS Academy | Best Online Courses for JEE, NEET & Competitive Exams',
+    description: 'Leading online learning platform for JEE, NEET, and competitive exam preparation with expert-led courses.',
     images: ['https://i.ibb.co/s9xkRzbw/favicon-ico.jpg'],
   },
   robots: {

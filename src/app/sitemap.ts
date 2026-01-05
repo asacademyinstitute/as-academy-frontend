@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://asacademy.in';
+    const baseUrl = 'https://asacademy.site';
 
     // Static pages
     const staticPages: MetadataRoute.Sitemap = [
