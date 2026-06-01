@@ -50,6 +50,22 @@ function AdminUsersContent() {
         }
     };
 
+    const handleResetPassword = async (userId) => {
+        const newPassword = prompt('Enter new password for this user:');
+        if (!newPassword) return;
+        if (newPassword.length < 6) {
+            alert('Password must be at least 6 characters long');
+            return;
+        }
+        
+        try {
+            await userAPI.update(userId, { password: newPassword });
+            alert('Password reset successfully');
+        } catch (error) {
+            alert('Failed to reset password: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
     const handleLogout = async () => {
         await logout();
         router.push('/');
@@ -194,6 +210,12 @@ function AdminUsersContent() {
                                                         Reset Device
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => handleResetPassword(u.id)}
+                                                    className="text-purple-600 hover:text-purple-700"
+                                                >
+                                                    Reset Password
+                                                </button>
                                                 <Link
                                                     href={`/admin/users/${u.id}`}
                                                     className="text-gray-600 hover:text-gray-700"

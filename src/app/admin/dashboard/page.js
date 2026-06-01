@@ -20,9 +20,11 @@ function AdminDashboardContent() {
 
     const fetchData = async () => {
         try {
-            const [coursesRes, usersRes] = await Promise.all([
-                coursesAPI.getAll({}),
-                userAPI.getAll({ limit: 10 }),
+            const [coursesRes, usersRes, studentsRes, teachersRes] = await Promise.all([
+                coursesAPI.getAll({ limit: 10 }),
+                userAPI.getAll({ limit: 1 }),
+                userAPI.getAll({ role: 'student', limit: 1 }),
+                userAPI.getAll({ role: 'teacher', limit: 1 })
             ]);
 
             setCourses(coursesRes.data.data.courses || []);
@@ -31,8 +33,8 @@ function AdminDashboardContent() {
             setStats({
                 totalCourses: coursesRes.data.data.total || 0,
                 totalUsers: usersRes.data.data.total || 0,
-                activeStudents: usersRes.data.data.users?.filter(u => u.role === 'student').length || 0,
-                teachers: usersRes.data.data.users?.filter(u => u.role === 'teacher').length || 0,
+                activeStudents: studentsRes.data.data.total || 0,
+                teachers: teachersRes.data.data.total || 0,
             });
         } catch (error) {
             console.error('Error fetching data:', error);
