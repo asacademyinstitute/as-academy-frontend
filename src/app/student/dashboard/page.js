@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { enrollmentAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
@@ -13,16 +13,29 @@ import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 function StudentDashboardContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, logout } = useAuthStore();
     const [enrollments, setEnrollments] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showExpiredModal, setShowExpiredModal] = useState(false);
+    const [expiredCourse, setExpiredCourse] = useState(null);
 
     useEffect(() => {
         if (user) {
             fetchData();
         }
     }, [user]);
+
+    useEffect(() => {
+        const expired = searchParams.get('expired');
+        const courseTitle = searchParams.get('courseTitle');
+        if (expired === 'true' && courseTitle) {
+            setExpiredCourse({ title: decodeURIComponent(courseTitle) });
+            setShowExpiredModal(true);
+            router.replace('/student/dashboard');
+        }
+    }, [searchParams]);
 
     const fetchData = async () => {
         try {
@@ -44,6 +57,17 @@ function StudentDashboardContent() {
         router.push('/');
     };
 
+    const handleCourseClick = (e, enrollment) => {
+        const isExpired = enrollment.status !== 'active' ||
+            (enrollment.valid_until && new Date(enrollment.valid_until) < new Date());
+
+        if (isExpired) {
+            e.preventDefault();
+            setExpiredCourse(enrollment.courses);
+            setShowExpiredModal(true);
+        }
+    };
+
     const navItems = [
         { label: 'My Courses', href: '/student/dashboard', icon: <BookOpen className="w-5 h-5" /> },
         { label: 'Certificates', href: '/student/certificates', icon: <Award className="w-5 h-5" /> },
@@ -52,7 +76,7 @@ function StudentDashboardContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background dark:bg-gray-950 pb-24 md:pb-0">
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
@@ -130,6 +154,15 @@ function StudentDashboardContent() {
                                             href={enrollment.courses.live_class_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
+                                            onClick={(e) => {
+                                                const isExpired = enrollment.status !== 'active' ||
+                                                    (enrollment.valid_until && new Date(enrollment.valid_until) < new Date());
+                                                if (isExpired) {
+                                                    e.preventDefault();
+                                                    setExpiredCourse(enrollment.courses);
+                                                    setShowExpiredModal(true);
+                                                }
+                                            }}
                                             className="inline-flex items-center bg-white text-purple-600 px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold hover:bg-purple-50 transition-all shadow-md touch-target"
                                         >
                                             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -158,6 +191,7 @@ function StudentDashboardContent() {
                                 <Link
                                     key={enrollment.id}
                                     href={`/student/courses/${enrollment.course_id}`}
+                                    onClick={(e) => handleCourseClick(e, enrollment)}
                                     className="bg-card dark:bg-gray-900 rounded-lg shadow-soft hover:shadow-medium transition-all hover-lift border border-border"
                                 >
                                     <div className="h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
@@ -198,6 +232,59 @@ function StudentDashboardContent() {
                     )}
                 </div>
             </div>
+
+            {/* Expired Course Modal */}
+            {showExpiredModal && expiredCourse && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setShowExpiredModal(false)}
+                    />
+
+                    <div className="relative bg-card dark:bg-gray-900 border border-red-200/50 dark:border-red-900/30 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+                        <div className="h-2 bg-gradient-to-r from-red-500 via-pink-500 to-orange-500" />
+
+                        <div className="p-6 md:p-8 text-center">
+                            <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 mb-6 animate-pulse">
+                                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+
+                            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+                                Course Enrollment Expired!
+                            </h3>
+
+                            <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-4 px-3 py-1 bg-red-50 dark:bg-red-950/30 rounded-full inline-block">
+                                {expiredCourse.title}
+                            </p>
+
+                            <p className="text-muted-foreground text-sm md:text-base mb-6 leading-relaxed">
+                                Aapka is course ka access period khatam ho chuka hai. Dobara access paane ke liye kripya course ko renew karein ya administrator se sampark karein.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <button
+                                    onClick={() => setShowExpiredModal(false)}
+                                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg border border-border text-foreground hover:bg-muted font-medium transition-all duration-200"
+                                >
+                                    Close
+                                </button>
+                                <Link
+                                    href="/courses"
+                                    onClick={() => setShowExpiredModal(false)}
+                                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-lg hover:shadow-red-600/20 transition-all duration-200 flex items-center justify-center gap-2"
+                                >
+                                    <span>Browse / Renew</span>
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

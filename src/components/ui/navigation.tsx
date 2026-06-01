@@ -161,6 +161,81 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
     );
 }
 
+// Mobile Bottom Navigation Component
+interface MobileBottomNavProps {
+    navItems: NavItem[];
+}
+
+function MobileBottomNav({ navItems }: MobileBottomNavProps) {
+    const pathname = usePathname();
+
+    return (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+            {/* Glassmorphic background */}
+            <div
+                className="mx-2 mb-2 rounded-2xl border border-white/15 dark:border-white/10 shadow-premium overflow-hidden"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.78)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                }}
+            >
+                {/* Dark mode override */}
+                <div className="hidden dark:block absolute inset-0 rounded-2xl" style={{
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    backdropFilter: 'blur(20px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                }} />
+
+                <div className="relative flex items-center justify-around px-1 py-1.5" style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
+                    {navItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition-all duration-300 group",
+                                    isActive
+                                        ? "text-white"
+                                        : "text-gray-500 dark:text-gray-400 active:scale-95"
+                                )}
+                            >
+                                {/* Active pill background */}
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="bottomNavIndicator"
+                                        className="absolute inset-0 rounded-xl gradient-blue-purple shadow-medium"
+                                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                                    />
+                                )}
+
+                                {/* Icon */}
+                                <span className={cn(
+                                    "relative z-10 transition-transform duration-200",
+                                    isActive ? "scale-110" : "group-hover:scale-110"
+                                )}>
+                                    {item.icon}
+                                </span>
+
+                                {/* Label */}
+                                <span className={cn(
+                                    "relative z-10 text-[10px] font-semibold mt-0.5 leading-tight truncate max-w-full",
+                                    isActive
+                                        ? "text-white"
+                                        : "text-gray-500 dark:text-gray-400"
+                                )}>
+                                    {item.label}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </div>
+        </nav>
+    );
+}
+
 // Dashboard Navigation Component
 interface DashboardNavProps {
     brand: {
@@ -251,7 +326,7 @@ export function DashboardNav({ brand, user, navItems, onLogout, actions }: Dashb
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Slide-out Menu (user info + logout only) */}
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <>
@@ -314,6 +389,9 @@ export function DashboardNav({ brand, user, navItems, onLogout, actions }: Dashb
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Mobile Bottom Navigation Bar */}
+            <MobileBottomNav navItems={navItems} />
         </>
     );
 }

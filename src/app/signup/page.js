@@ -13,6 +13,7 @@ export default function SignupPage() {
         name: '',
         email: '',
         phone: '',
+        enrollment_number: '',
         college_name: '',
         semester: '',
         password: '',
@@ -110,6 +111,22 @@ export default function SignupPage() {
                                     pattern="[0-9]{10}"
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="9876543210"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="enrollment_number" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Enrollment Number *
+                                </label>
+                                <input
+                                    type="text"
+                                    id="enrollment_number"
+                                    name="enrollment_number"
+                                    value={formData.enrollment_number}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="e.g. 2101234567"
                                 />
                             </div>
 

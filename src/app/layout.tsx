@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -9,9 +9,19 @@ const inter = Inter({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#3b82f6",
+};
+
 export const metadata: Metadata = {
   title: "AS Academy - Learning Management System",
   description: "Modern LMS platform for online education",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AS Academy",
+  },
 };
 
 export default function RootLayout({

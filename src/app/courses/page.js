@@ -5,14 +5,24 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { coursesAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import useAuthStore from '@/store/authStore';
 
 export default function CoursesPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const { isAuthenticated, user } = useAuthStore();
 
     const categories = ['All', 'Diploma', 'Degree', 'BCA', 'MCA', 'B.Tech', 'M.Tech', 'B.Sc', 'M.Sc'];
+
+    // Determine dashboard path based on user role
+    const getDashboardPath = () => {
+        if (!user) return '/login';
+        if (user.role === 'admin') return '/admin/dashboard';
+        if (user.role === 'teacher') return '/teacher/dashboard';
+        return '/student/dashboard';
+    };
 
     useEffect(() => {
         fetchCourses();
@@ -50,12 +60,28 @@ export default function CoursesPage() {
                             AS ACADEMY
                         </Link>
                         <div className="flex items-center space-x-4">
-                            <Link href="/login" className="text-gray-700 hover:text-blue-600">
-                                Login
-                            </Link>
-                            <Link href="/signup" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                                Sign Up
-                            </Link>
+                            {isAuthenticated && user ? (
+                                <>
+                                    <Link href={getDashboardPath()} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        Dashboard
+                                    </Link>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                            {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                        </div>
+                                        <span className="text-gray-700 font-medium hidden sm:block">{user.name}</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/login" className="text-gray-700 hover:text-blue-600">
+                                        Login
+                                    </Link>
+                                    <Link href="/signup" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                                        Sign Up
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

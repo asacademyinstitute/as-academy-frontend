@@ -10,8 +10,9 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [scale, setScale] = useState(1.5);
+    const [scale, setScale] = useState(1.0);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [hasZoomed, setHasZoomed] = useState(false);
 
     // Load PDF
     useEffect(() => {
@@ -80,16 +81,46 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
         loadPDF();
     }, [pdfUrl]);
 
+    // Auto-fit to width on load or screen resize (unless zoomed manually)
+    useEffect(() => {
+        if (!pdf || !containerRef.current) return;
+
+        const autoFit = async () => {
+            if (hasZoomed) return;
+            try {
+                const page = await pdf.getPage(currentPage);
+                const viewport = page.getViewport({ scale: 1.0 });
+                const containerWidth = containerRef.current.clientWidth;
+                const targetWidth = Math.max(280, containerWidth);
+                const fitScale = targetWidth / viewport.width;
+                setScale(Number(fitScale.toFixed(2)));
+            } catch (error) {
+                console.error('Error auto-scaling PDF:', error);
+            }
+        };
+
+        autoFit();
+
+        window.addEventListener('resize', autoFit);
+        return () => window.removeEventListener('resize', autoFit);
+    }, [pdf, currentPage, hasZoomed]);
+
     // Render page with watermark
     useEffect(() => {
         if (!pdf || !canvasRef.current) return;
 
+        let renderTask = null;
+        let isCancelled = false;
+
         const renderPage = async () => {
             try {
                 const page = await pdf.getPage(currentPage);
+                if (isCancelled) return;
+                
                 const canvas = canvasRef.current;
+                if (!canvas) return;
+                
                 const context = canvas.getContext('2d');
-
                 const viewport = page.getViewport({ scale });
 
                 canvas.height = viewport.height;
@@ -101,16 +132,28 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                 };
 
                 // Render PDF page
-                await page.render(renderContext).promise;
+                renderTask = page.render(renderContext);
+                await renderTask.promise;
 
-                // Apply watermark overlay
-                applyWatermark(context, canvas.width, canvas.height);
+                if (!isCancelled) {
+                    // Apply watermark overlay
+                    applyWatermark(context, canvas.width, canvas.height);
+                }
             } catch (error) {
-                console.error('Error rendering page:', error);
+                if (error?.name !== 'RenderingCancelledException') {
+                    console.error('Error rendering page:', error);
+                }
             }
         };
 
         renderPage();
+        
+        return () => {
+            isCancelled = true;
+            if (renderTask) {
+                renderTask.cancel();
+            }
+        };
     }, [pdf, currentPage, scale]);
 
     // Apply watermark overlay
@@ -190,10 +233,12 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
 
     const zoomIn = () => {
         setScale(Math.min(scale + 0.25, 3));
+        setHasZoomed(true);
     };
 
     const zoomOut = () => {
         setScale(Math.max(scale - 0.25, 0.5));
+        setHasZoomed(true);
     };
 
     // Fullscreen toggle
@@ -225,10 +270,10 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center aspect-video bg-gray-100">
+            <div className="flex items-center justify-center aspect-video bg-gray-50 dark:bg-gray-900">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading PDF...</p>
+                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-blue-600 dark:border-blue-500 mx-auto mb-3"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading PDF...</p>
                 </div>
             </div>
         );
@@ -236,22 +281,14 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
 
     if (error) {
         return (
-            <div className="flex items-center justify-center aspect-video bg-red-50 border border-red-200">
+            <div className="flex items-center justify-center aspect-video bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl">
                 <div className="text-center p-6 max-w-md">
-                    <div className="text-red-600 text-5xl mb-4">⚠️</div>
-                    <h3 className="text-lg font-bold text-red-800 mb-2">Failed to Load PDF</h3>
-                    <p className="text-sm text-red-700 mb-4">{error}</p>
-                    <div className="text-xs text-gray-600 mb-4">
-                        <p>Possible causes:</p>
-                        <ul className="list-disc list-inside text-left mt-2">
-                            <li>PDF file is not accessible</li>
-                            <li>Network connection issue</li>
-                            <li>Invalid or expired URL</li>
-                        </ul>
-                    </div>
+                    <div className="text-red-500 text-4xl mb-3">⚠️</div>
+                    <h3 className="text-base font-bold text-red-800 dark:text-red-400 mb-1.5">Failed to Load PDF</h3>
+                    <p className="text-xs text-red-700 dark:text-red-400 mb-4">{error}</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold transition"
                     >
                         Reload Page
                     </button>
@@ -261,68 +298,78 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
     }
 
     return (
-        <div className="bg-gray-100" ref={containerRef}>
+        <div className="bg-gray-50 dark:bg-gray-900 border border-border rounded-xl overflow-hidden shadow-soft" ref={containerRef}>
             {/* Controls */}
-            <div className="bg-white border-b p-3 flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+            <div className="bg-white dark:bg-gray-900 border-b border-border p-2.5 flex flex-wrap gap-2.5 items-center justify-between">
+                <div className="flex items-center space-x-1.5">
                     <button
                         onClick={goToPreviousPage}
                         disabled={currentPage === 1}
-                        className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        className="px-2.5 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-xs font-semibold transition"
                     >
-                        Previous
+                        Prev
                     </button>
-                    <span className="text-sm text-gray-700">
-                        Page {currentPage} of {totalPages}
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 px-1">
+                        {currentPage} / {totalPages}
                     </span>
                     <button
                         onClick={goToNextPage}
                         disabled={currentPage === totalPages}
-                        className="px-3 py-1 bg-blue-600 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        className="px-2.5 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:cursor-not-allowed text-xs font-semibold transition"
                     >
                         Next
                     </button>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5">
                     <button
                         onClick={zoomOut}
-                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-850 dark:text-gray-200 rounded-lg text-xs font-bold transition"
                     >
                         -
                     </button>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 min-w-[36px] text-center">
                         {Math.round(scale * 100)}%
                     </span>
                     <button
                         onClick={zoomIn}
-                        className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                        className="w-7 h-7 flex items-center justify-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-850 dark:text-gray-200 rounded-lg text-xs font-bold transition"
                     >
                         +
                     </button>
                     <button
+                        onClick={() => setHasZoomed(false)}
+                        className="px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold transition"
+                    >
+                        Fit
+                    </button>
+                    <button
                         onClick={toggleFullscreen}
-                        className="ml-4 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="p-1.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition"
                         title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
                     >
-                        {isFullscreen ? '⊗' : '⛶'}
+                        {isFullscreen ? (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" /></svg>
+                        )}
                     </button>
                 </div>
             </div>
 
             {/* PDF Canvas */}
-            <div className="overflow-auto bg-gray-200 p-4" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+            <div className="overflow-auto bg-gray-100 dark:bg-gray-950 flex justify-center items-start w-full" style={{ maxHeight: 'calc(100vh - 150px)' }}>
                 <canvas
                     ref={canvasRef}
                     onContextMenu={handleContextMenu}
-                    className="mx-auto shadow-lg bg-white"
-                    style={{ userSelect: 'none' }}
+                    className="bg-white dark:bg-gray-900"
+                    style={{ userSelect: 'none', display: 'block' }}
                 />
             </div>
 
             {/* Security Notice */}
-            <div className="bg-yellow-50 border-t border-yellow-200 p-2 text-center">
-                <p className="text-xs text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-950/20 border-t border-yellow-200 dark:border-yellow-900/30 p-2 text-center">
+                <p className="text-[10px] sm:text-xs text-yellow-800 dark:text-yellow-500 font-medium">
                     🔒 This PDF is protected. Download, print, and copy are disabled.
                 </p>
             </div>
