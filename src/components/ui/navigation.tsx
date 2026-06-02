@@ -164,72 +164,111 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
 // Mobile Bottom Navigation Component
 interface MobileBottomNavProps {
     navItems: NavItem[];
+    brandHref?: string;
 }
 
-function MobileBottomNav({ navItems }: MobileBottomNavProps) {
+function MobileBottomNav({ navItems, brandHref }: MobileBottomNavProps) {
     const pathname = usePathname();
+
+    const midIndex = Math.ceil(navItems.length / 2);
+    const leftItems = navItems.slice(0, midIndex);
+    const rightItems = navItems.slice(midIndex);
+
+    const renderNavItem = (item: NavItem) => {
+        const isActive = pathname === item.href;
+        return (
+            <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                    "relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition-all duration-300 group z-10",
+                    isActive
+                        ? "text-white"
+                        : "text-gray-500 dark:text-gray-400 active:scale-95"
+                )}
+            >
+                {/* Active pill background */}
+                {isActive && (
+                    <motion.div
+                        layoutId="bottomNavIndicator"
+                        className="absolute inset-0 rounded-xl gradient-blue-purple shadow-medium"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                )}
+
+                {/* Icon */}
+                <span className={cn(
+                    "relative z-10 transition-transform duration-200",
+                    isActive ? "scale-110" : "group-hover:scale-110"
+                )}>
+                    {item.icon}
+                </span>
+
+                {/* Label */}
+                <span className={cn(
+                    "relative z-10 text-[9px] font-bold mt-0.5 leading-tight truncate max-w-full",
+                    isActive
+                        ? "text-white"
+                        : "text-gray-500 dark:text-gray-400"
+                )}>
+                    {item.label}
+                </span>
+            </Link>
+        );
+    };
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+            {/* Ambient Background Glow behind the center floating button */}
+            <div className="absolute top-[-10px] left-1/2 -translate-x-1/2 w-28 h-10 bg-primary/20 dark:bg-primary/10 rounded-full blur-xl pointer-events-none" />
+
             {/* Glassmorphic background */}
             <div
-                className="mx-2 mb-2 rounded-2xl border border-white/15 dark:border-white/10 shadow-premium overflow-hidden"
+                className="mx-3 mb-3 rounded-2xl border border-white/15 dark:border-white/10 shadow-premium overflow-visible"
                 style={{
                     background: 'rgba(255, 255, 255, 0.78)',
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }}
             >
                 {/* Dark mode override */}
                 <div className="hidden dark:block absolute inset-0 rounded-2xl" style={{
                     background: 'rgba(15, 23, 42, 0.85)',
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                    backdropFilter: 'blur(24px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 }} />
 
-                <div className="relative flex items-center justify-around px-1 py-1.5" style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href;
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    "relative flex flex-col items-center justify-center flex-1 py-1.5 px-1 rounded-xl transition-all duration-300 group",
-                                    isActive
-                                        ? "text-white"
-                                        : "text-gray-500 dark:text-gray-400 active:scale-95"
-                                )}
-                            >
-                                {/* Active pill background */}
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="bottomNavIndicator"
-                                        className="absolute inset-0 rounded-xl gradient-blue-purple shadow-medium"
-                                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                                    />
-                                )}
+                <div className="relative flex items-center justify-between px-2 py-1.5" style={{ paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))' }}>
+                    {/* Left 2 items */}
+                    <div className="flex flex-1 items-center justify-around">
+                        {leftItems.map(renderNavItem)}
+                    </div>
 
-                                {/* Icon */}
-                                <span className={cn(
-                                    "relative z-10 transition-transform duration-200",
-                                    isActive ? "scale-110" : "group-hover:scale-110"
-                                )}>
-                                    {item.icon}
-                                </span>
+                    {/* Center Floating Brand Badge with Premium Shapes */}
+                    <div className="relative flex items-center justify-center px-2 z-20">
+                        <Link
+                            href={brandHref || "/"}
+                            className="relative flex flex-col items-center justify-center -mt-6 group focus:outline-none"
+                        >
+                            {/* Inner circle glowing layer */}
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 blur-[8px] opacity-70 group-hover:opacity-100 group-hover:scale-115 transition-all duration-300" />
+                            
+                            {/* The floating rounded badge itself */}
+                            <div className="relative w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 border-[3px] border-white dark:border-slate-900 shadow-premium flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
+                                <span className="text-white text-xs font-black tracking-wider leading-none select-none">AS</span>
+                            </div>
 
-                                {/* Label */}
-                                <span className={cn(
-                                    "relative z-10 text-[10px] font-semibold mt-0.5 leading-tight truncate max-w-full",
-                                    isActive
-                                        ? "text-white"
-                                        : "text-gray-500 dark:text-gray-400"
-                                )}>
-                                    {item.label}
-                                </span>
-                            </Link>
-                        );
-                    })}
+                            {/* Micro brand name appearing on hover */}
+                            <span className="absolute -bottom-5 text-[8px] font-black tracking-widest text-primary dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap uppercase">
+                                ACADEMY
+                            </span>
+                        </Link>
+                    </div>
+
+                    {/* Right 2 items */}
+                    <div className="flex flex-1 items-center justify-around">
+                        {rightItems.map(renderNavItem)}
+                    </div>
                 </div>
             </div>
         </nav>
@@ -391,7 +430,7 @@ export function DashboardNav({ brand, user, navItems, onLogout, actions }: Dashb
             </AnimatePresence>
 
             {/* Mobile Bottom Navigation Bar */}
-            <MobileBottomNav navItems={navItems} />
+            <MobileBottomNav navItems={navItems} brandHref={brand.href} />
         </>
     );
 }

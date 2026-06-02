@@ -79,7 +79,7 @@ function TeacherDashboardContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
+        <div className="min-h-screen bg-background dark:bg-gray-950 pb-24 md:pb-0">
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/teacher/dashboard' }}
