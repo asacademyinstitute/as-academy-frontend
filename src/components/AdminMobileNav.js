@@ -17,7 +17,6 @@ export default function AdminMobileNav({ user, onLogout }) {
         { href: '/admin/top-rankers', label: 'Top Rankers', icon: '🏆' },
         { href: '/admin/course-requests', label: 'Course Requests', icon: '📝' },
         { href: '/admin/security', label: 'Security', icon: '🔒' },
-        { href: '/admin/audit', label: 'Audit Logs', icon: '📋' },
     ];
 
     const isActive = (href) => pathname === href;

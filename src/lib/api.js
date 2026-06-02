@@ -173,11 +173,6 @@ export const aiAPI = {
     getStudyTips: (topic) => api.post('/ai/study-tips', { topic }),
 };
 
-export const auditAPI = {
-    getLogs: (params) => api.get('/audit', { params }),
-    getUserActivity: (userId, days) => api.get(`/audit/user/${userId}`, { params: { days } }),
-};
-
 export const settingsAPI = {
     getAll: () => api.get('/settings'),
     getByKey: (key) => api.get(`/settings/${key}`),
