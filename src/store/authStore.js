@@ -100,7 +100,11 @@ const useAuthStore = create(
             register: async (userData) => {
                 try {
                     set({ error: null, isLoading: true });
-                    const response = await api.post('/auth/register', userData);
+
+                    // Generate device ID for device tracking
+                    const deviceId = generateDeviceId();
+
+                    const response = await api.post('/auth/register', { ...userData, deviceId });
                     const { user, accessToken, refreshToken } = response.data.data;
 
                     localStorage.setItem('accessToken', accessToken);

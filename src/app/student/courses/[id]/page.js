@@ -108,10 +108,8 @@ function CourseViewContent() {
                     const response = await streamingAPI.getVideoUrl(lecture.id);
                     setVideoUrl(response.data.data.url);
                 } else if (lecture.type === 'pdf') {
-                    const response = await streamingAPI.getPdfStream(lecture.id);
-                    const blob = new Blob([response.data], { type: 'application/pdf' });
-                    const objectUrl = URL.createObjectURL(blob);
-                    setVideoUrl(objectUrl);
+                    const response = await streamingAPI.getPdfUrl(lecture.id);
+                    setVideoUrl(response.data.data.url);
                 } else {
                     console.warn('Unknown lecture type:', lecture.type);
                 }

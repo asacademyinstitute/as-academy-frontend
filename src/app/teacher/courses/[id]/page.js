@@ -23,6 +23,7 @@ function TeacherCourseManageContent() {
     // Preview state for video and PDF
     const [previewModal, setPreviewModal] = useState(null);
     const [previewContent, setPreviewContent] = useState(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     useEffect(() => {
         fetchCourseData();
@@ -190,9 +191,26 @@ function TeacherCourseManageContent() {
         }
     };
 
-    const handlePreview = (lecture) => {
-        setPreviewContent(lecture);
-        setPreviewModal(lecture.type);
+    const handlePreview = async (lecture) => {
+        if (!lecture.file_url) return;
+        setPreviewLoading(true);
+        try {
+            let url = lecture.file_url;
+            if (lecture.type === 'video') {
+                const response = await streamingAPI.getVideoUrl(lecture.id);
+                url = response.data.data.url;
+            } else if (lecture.type === 'pdf') {
+                const response = await streamingAPI.getPdfUrl(lecture.id);
+                url = response.data.data.url;
+            }
+            setPreviewContent({ ...lecture, signed_url: url });
+            setPreviewModal(lecture.type);
+        } catch (error) {
+            console.error('Error fetching preview URL:', error);
+            alert('Failed to load preview. Please try again.');
+        } finally {
+            setPreviewLoading(false);
+        }
     };
 
     const closePreview = () => {
@@ -531,6 +549,16 @@ function TeacherCourseManageContent() {
                         </div>
                     )}
 
+                    {/* Preview Loading Overlay */}
+                    {previewLoading && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                            <div className="bg-white rounded-lg p-6 flex flex-col items-center">
+                                <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-blue-600 mb-3"></div>
+                                <p className="text-gray-700 text-sm font-semibold">Generating secure preview...</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Preview Modals */}
                     {previewModal && previewContent && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={closePreview}>
@@ -548,7 +576,7 @@ function TeacherCourseManageContent() {
                                 {/* Video Preview */}
                                 {previewModal === 'video' && (
                                     <video
-                                        src={previewContent.file_url}
+                                        src={previewContent.signed_url || previewContent.file_url}
                                         controls
                                         className="w-full rounded"
                                     />
@@ -557,7 +585,7 @@ function TeacherCourseManageContent() {
                                 {/* PDF Preview */}
                                 {previewModal === 'pdf' && (
                                     <iframe
-                                        src={previewContent.file_url}
+                                        src={previewContent.signed_url || previewContent.file_url}
                                         className="w-full h-[70vh] rounded border"
                                         title="PDF Preview"
                                     />

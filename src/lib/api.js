@@ -10,12 +10,17 @@ const api = axios.create({
     },
 });
 
-// Request interceptor - attach token
+// Request interceptor - attach token and device ID
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('accessToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+        // Always send device ID so backend can validate device fingerprint
+        const deviceId = localStorage.getItem('device_id');
+        if (deviceId) {
+            config.headers['X-Device-ID'] = deviceId;
         }
         return config;
     },
