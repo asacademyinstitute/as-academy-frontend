@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://as-academy-backend.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'https://as-academy-backend.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({
@@ -184,3 +184,57 @@ export const settingsAPI = {
     update: (key, value) => api.put(`/settings/${key}`, { value }),
 };
 
+// Device Management API
+export const deviceAPI = {
+    getActivity: (params) => api.get('/devices/activity', { params }),
+    getSettings: () => api.get('/devices/settings'),
+    updateSettings: (data) => api.put('/devices/settings', data),
+    resetAll: () => api.post('/devices/reset-all'),
+    forceLogout: (userId) => api.post(`/devices/${userId}/force-logout`),
+    resetUserDevices: (userId) => api.post(`/devices/${userId}/reset`),
+    blockDevice: (deviceId) => api.post(`/devices/${deviceId}/block`),
+    toggleEnforcement: (enabled) => api.put('/devices/enforcement', { enabled }),
+};
+
+// Course Request API
+export const courseRequestAPI = {
+    create: (data) => api.post('/course-requests', data),
+    getAll: (params) => api.get('/course-requests', { params }),
+    getMy: () => api.get('/course-requests/my'),
+    approve: (id) => api.put(`/course-requests/${id}/approve`),
+    reject: (id, adminNotes) => api.put(`/course-requests/${id}/reject`, { adminNotes }),
+    update: (id, data) => api.put(`/course-requests/${id}`, data),
+    delete: (id) => api.delete(`/course-requests/${id}`),
+};
+
+// Advanced Payment Analytics API
+export const paymentAnalyticsAPI = {
+    getAdvanced: () => api.get('/payments/analytics/advanced'),
+    getByMonth: () => api.get('/payments/analytics/by-month'),
+    getByCourse: () => api.get('/payments/analytics/by-course'),
+    getFiltered: (params) => api.get('/payments/filtered', { params }),
+};
+
+// Coupon API
+export const couponAPI = {
+    create: (data) => api.post('/coupons', data),
+    getAll: (params) => api.get('/coupons', { params }),
+    getOne: (id) => api.get(`/coupons/${id}`),
+    update: (id, data) => api.put(`/coupons/${id}`, data),
+    delete: (id) => api.delete(`/coupons/${id}`),
+    toggle: (id) => api.patch(`/coupons/${id}/toggle`),
+    validate: (code, courseId) => api.post('/coupons/validate', { code, courseId }),
+    getStats: (id) => api.get(`/coupons/${id}/stats`),
+};
+
+// Top Rankers API
+export const topRankersAPI = {
+    getActive: () => api.get('/top-rankers'),
+    getAll: () => api.get('/top-rankers/admin'),
+    create: (data) => api.post('/top-rankers', data),
+    update: (id, data) => api.put(`/top-rankers/${id}`, data),
+    delete: (id) => api.delete(`/top-rankers/${id}`),
+    toggle: (id) => api.post(`/top-rankers/${id}/toggle`),
+    getVisibility: () => api.get('/top-rankers/visibility'),
+    setVisibility: (enabled) => api.post('/top-rankers/visibility', { enabled }),
+};

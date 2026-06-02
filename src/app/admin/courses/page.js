@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { coursesAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import AdminMobileNav from '@/components/AdminMobileNav';
+
+const CATEGORIES = ['Diploma', 'BTech', 'BCA', 'MCA', 'Coding'];
+const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
 
 function AdminCoursesContent() {
     const router = useRouter();
@@ -14,6 +18,8 @@ function AdminCoursesContent() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterSemester, setFilterSemester] = useState('all');
     const [deleteConfirm, setDeleteConfirm] = useState(null);
 
     useEffect(() => {
@@ -24,7 +30,7 @@ function AdminCoursesContent() {
         try {
             setLoading(true);
             const response = await coursesAPI.getAll({});
-            setCourses(response.data.data.courses || []);
+            setCourses(response.data?.data?.courses || []);
         } catch (error) {
             console.error('Error fetching courses:', error);
         } finally {
@@ -49,66 +55,29 @@ function AdminCoursesContent() {
     };
 
     const filteredCourses = courses.filter(course => {
-        const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch =
+            course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             course.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || course.status === filterStatus;
-        return matchesSearch && matchesStatus;
+        const matchesCategory = filterCategory === 'all' || course.category === filterCategory;
+        const matchesSemester = filterSemester === 'all' || course.semester === filterSemester;
+        return matchesSearch && matchesStatus && matchesCategory && matchesSemester;
     });
+
+    const resetFilters = () => {
+        setSearchTerm('');
+        setFilterStatus('all');
+        setFilterCategory('all');
+        setFilterSemester('all');
+    };
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/admin/dashboard"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/admin/users"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Users
-                        </Link>
-                        <Link
-                            href="/admin/courses"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Courses
-                        </Link>
-                        <Link
-                            href="/admin/payments"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header with Actions */}
+                {/* Header */}
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-900">All Courses</h2>
                     <Link
@@ -121,23 +90,52 @@ function AdminCoursesContent() {
 
                 {/* Filters */}
                 <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Search */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Search
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search by title or description..."
+                                placeholder="Search by title..."
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                         </div>
+
+                        {/* Category */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Status
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="all">All Categories</option>
+                                {CATEGORIES.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Semester */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
+                            <select
+                                value={filterSemester}
+                                onChange={(e) => setFilterSemester(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="all">All Semesters</option>
+                                {SEMESTERS.map(sem => (
+                                    <option key={sem} value={sem}>{sem}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Status */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                             <select
                                 value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -150,6 +148,18 @@ function AdminCoursesContent() {
                             </select>
                         </div>
                     </div>
+
+                    {/* Active filters + Reset */}
+                    {(searchTerm || filterStatus !== 'all' || filterCategory !== 'all' || filterSemester !== 'all') && (
+                        <div className="mt-3 flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-gray-500">Active filters:</span>
+                            {searchTerm && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">Search: "{searchTerm}"</span>}
+                            {filterCategory !== 'all' && <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">Category: {filterCategory}</span>}
+                            {filterSemester !== 'all' && <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">Semester: {filterSemester}</span>}
+                            {filterStatus !== 'all' && <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full">Status: {filterStatus}</span>}
+                            <button onClick={resetFilters} className="text-xs text-red-600 hover:underline ml-1">Clear all</button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Courses Table */}
@@ -161,10 +171,7 @@ function AdminCoursesContent() {
                     ) : filteredCourses.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-gray-500 text-lg">No courses found</p>
-                            <Link
-                                href="/admin/courses/create"
-                                className="text-blue-600 hover:text-blue-700 mt-2 inline-block"
-                            >
+                            <Link href="/admin/courses/create" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
                                 Create your first course
                             </Link>
                         </div>
@@ -173,24 +180,13 @@ function AdminCoursesContent() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Course
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Category
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Duration
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Semester</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validity</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -198,48 +194,43 @@ function AdminCoursesContent() {
                                         <tr key={course.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center">
-                                                    {course.thumbnail && (
+                                                    {(course.thumbnail_url || course.thumbnail) && (
                                                         <img
-                                                            src={course.thumbnail}
+                                                            src={course.thumbnail_url || course.thumbnail}
                                                             alt={course.title}
                                                             className="h-12 w-12 rounded object-cover mr-3"
                                                         />
                                                     )}
                                                     <div>
-                                                        <div className="text-sm font-medium text-gray-900">
-                                                            {course.title}
-                                                        </div>
-                                                        <div className="text-sm text-gray-500">
-                                                            {course.level}
-                                                        </div>
+                                                        <div className="text-sm font-medium text-gray-900">{course.title}</div>
+                                                        <div className="text-xs text-gray-400">{course.level}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{course.category}</div>
+                                                <span className="text-sm text-gray-900">{course.category || '—'}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-sm text-gray-900">{course.semester || '—'}</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="text-sm text-gray-900">₹{course.price}</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{course.duration} days</div>
+                                                <div className="text-sm text-gray-900">{course.validity_days || course.duration || '—'} days</div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${course.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : course.status === 'inactive'
-                                                            ? 'bg-red-100 text-red-800'
-                                                            : 'bg-gray-100 text-gray-800'
-                                                    }`}>
+                                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                    course.status === 'active' ? 'bg-green-100 text-green-800'
+                                                    : course.status === 'inactive' ? 'bg-red-100 text-red-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                                }`}>
                                                     {course.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-3">
-                                                    <Link
-                                                        href={`/admin/courses/${course.id}`}
-                                                        className="text-blue-600 hover:text-blue-900"
-                                                    >
+                                                    <Link href={`/admin/courses/${course.id}`} className="text-blue-600 hover:text-blue-900">
                                                         Edit
                                                     </Link>
                                                     <button
@@ -257,6 +248,13 @@ function AdminCoursesContent() {
                         </div>
                     )}
                 </div>
+
+                {/* Result count */}
+                {!loading && (
+                    <p className="text-sm text-gray-500 mt-3">
+                        Showing {filteredCourses.length} of {courses.length} courses
+                    </p>
+                )}
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -264,20 +262,12 @@ function AdminCoursesContent() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
                         <h3 className="text-lg font-bold mb-4">Confirm Delete</h3>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete this course? This action cannot be undone.
-                        </p>
+                        <p className="text-gray-600 mb-6">Are you sure you want to delete this course? This action cannot be undone.</p>
                         <div className="flex justify-end space-x-3">
-                            <button
-                                onClick={() => setDeleteConfirm(null)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                            >
+                            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                                 Cancel
                             </button>
-                            <button
-                                onClick={() => handleDelete(deleteConfirm)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                            >
+                            <button onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                                 Delete
                             </button>
                         </div>

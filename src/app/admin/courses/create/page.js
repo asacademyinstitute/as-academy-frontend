@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { coursesAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import AdminMobileNav from '@/components/AdminMobileNav';
+
+const CATEGORIES = ['Diploma', 'BTech', 'BCA', 'MCA', 'Coding'];
+const SEMESTERS = ['Semester 1', 'Semester 2', 'Semester 3', 'Semester 4', 'Semester 5', 'Semester 6', 'Semester 7', 'Semester 8'];
 
 function CreateCourseContent() {
     const router = useRouter();
@@ -20,6 +24,9 @@ function CreateCourseContent() {
         validity_days: '',
         teacher_id: '',
         thumbnail_url: '',
+        category: '',
+        semester: '',
+        level: 'beginner',
         status: 'draft',
     });
 
@@ -30,7 +37,7 @@ function CreateCourseContent() {
     const fetchTeachers = async () => {
         try {
             const response = await userAPI.getAll({ role: 'teacher' });
-            setTeachers(response.data.data.users || []);
+            setTeachers(response.data?.data?.users || []);
         } catch (error) {
             console.error('Error fetching teachers:', error);
         }
@@ -38,10 +45,7 @@ function CreateCourseContent() {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e) => {
@@ -50,14 +54,12 @@ function CreateCourseContent() {
         setLoading(true);
 
         try {
-            // Validate required fields
             if (!formData.title || !formData.description || !formData.price || !formData.validity_days || !formData.teacher_id) {
                 setError('Please fill in all required fields');
                 setLoading(false);
                 return;
             }
 
-            // Convert price and validity_days to numbers
             const courseData = {
                 ...formData,
                 price: parseFloat(formData.price),
@@ -80,62 +82,11 @@ function CreateCourseContent() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <AdminMobileNav user={user} onLogout={handleLogout} />
 
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/admin/dashboard"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/admin/users"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Users
-                        </Link>
-                        <Link
-                            href="/admin/courses"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Courses
-                        </Link>
-                        <Link
-                            href="/admin/payments"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
-
-            {/* Content */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
-                    <Link
-                        href="/admin/courses"
-                        className="text-blue-600 hover:text-blue-700 flex items-center"
-                    >
+                    <Link href="/admin/courses" className="text-blue-600 hover:text-blue-700 flex items-center gap-1">
                         ← Back to Courses
                     </Link>
                 </div>
@@ -152,9 +103,7 @@ function CreateCourseContent() {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Title */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Course Title *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Course Title *</label>
                             <input
                                 type="text"
                                 name="title"
@@ -168,9 +117,7 @@ function CreateCourseContent() {
 
                         {/* Description */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
                             <textarea
                                 name="description"
                                 value={formData.description}
@@ -185,9 +132,7 @@ function CreateCourseContent() {
                         {/* Teacher and Price */}
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Assign Teacher *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Assign Teacher *</label>
                                 <select
                                     name="teacher_id"
                                     value={formData.teacher_id}
@@ -205,9 +150,7 @@ function CreateCourseContent() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Price (₹) *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹) *</label>
                                 <input
                                     type="number"
                                     name="price"
@@ -222,29 +165,74 @@ function CreateCourseContent() {
                             </div>
                         </div>
 
-                        {/* Validity Days */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Validity (days) *
-                            </label>
-                            <input
-                                type="number"
-                                name="validity_days"
-                                value={formData.validity_days}
-                                onChange={handleChange}
-                                required
-                                min="1"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="e.g., 365 (1 year)"
-                            />
-                            <p className="text-sm text-gray-500 mt-1">Number of days students will have access to this course</p>
+                        {/* Category and Semester */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                <select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select Category</option>
+                                    {CATEGORIES.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+                                <select
+                                    name="semester"
+                                    value={formData.semester}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Select Semester</option>
+                                    {SEMESTERS.map(sem => (
+                                        <option key={sem} value={sem}>{sem}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Level and Validity */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                                <select
+                                    name="level"
+                                    value={formData.level}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Validity (days) *</label>
+                                <input
+                                    type="number"
+                                    name="validity_days"
+                                    value={formData.validity_days}
+                                    onChange={handleChange}
+                                    required
+                                    min="1"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="e.g., 365"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">Days students will have access</p>
+                            </div>
                         </div>
 
                         {/* Thumbnail URL */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Thumbnail URL
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Thumbnail URL</label>
                             <input
                                 type="url"
                                 name="thumbnail_url"
@@ -259,9 +247,7 @@ function CreateCourseContent() {
                                         src={formData.thumbnail_url}
                                         alt="Thumbnail preview"
                                         className="h-32 w-auto rounded border"
-                                        onError={(e) => {
-                                            e.target.style.display = 'none';
-                                        }}
+                                        onError={(e) => { e.target.style.display = 'none'; }}
                                     />
                                 </div>
                             )}
@@ -269,9 +255,7 @@ function CreateCourseContent() {
 
                         {/* Status */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Status *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Status *</label>
                             <select
                                 name="status"
                                 value={formData.status}
@@ -287,10 +271,7 @@ function CreateCourseContent() {
 
                         {/* Submit Buttons */}
                         <div className="flex justify-end space-x-4 pt-4">
-                            <Link
-                                href="/admin/courses"
-                                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                            >
+                            <Link href="/admin/courses" className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                                 Cancel
                             </Link>
                             <button
@@ -303,8 +284,8 @@ function CreateCourseContent() {
                         </div>
                     </form>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
 

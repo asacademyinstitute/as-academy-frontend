@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { coursesAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import AdminMobileNav from '@/components/AdminMobileNav';
 
 function AdminDashboardContent() {
     const router = useRouter();
@@ -21,21 +22,36 @@ function AdminDashboardContent() {
     const fetchData = async () => {
         try {
             const [coursesRes, usersRes, studentsRes, teachersRes] = await Promise.all([
-                coursesAPI.getAll({ limit: 10 }),
-                userAPI.getAll({ limit: 1 }),
-                userAPI.getAll({ role: 'student', limit: 1 }),
-                userAPI.getAll({ role: 'teacher', limit: 1 })
+                coursesAPI.getAll(),
+                userAPI.getAll(),
+                userAPI.getAll({ role: 'student' }),
+                userAPI.getAll({ role: 'teacher' })
             ]);
 
-            setCourses(coursesRes.data.data.courses || []);
+            const coursesData = coursesRes.data?.data;
+            const usersData = usersRes.data?.data;
+            const studentsData = studentsRes.data?.data;
+            const teachersData = teachersRes.data?.data;
 
-            // Calculate basic stats
-            setStats({
-                totalCourses: coursesRes.data.data.total || 0,
-                totalUsers: usersRes.data.data.total || 0,
-                activeStudents: studentsRes.data.data.total || 0,
-                teachers: teachersRes.data.data.total || 0,
-            });
+            // Support both { total: N } and array-based responses
+            const totalCourses = coursesData?.total
+                ?? coursesData?.courses?.length
+                ?? 0;
+
+            const totalUsers = usersData?.total
+                ?? usersData?.users?.length
+                ?? 0;
+
+            const activeStudents = studentsData?.total
+                ?? studentsData?.users?.length
+                ?? 0;
+
+            const teachers = teachersData?.total
+                ?? teachersData?.users?.length
+                ?? 0;
+
+            setCourses(coursesData?.courses || []);
+            setStats({ totalCourses, totalUsers, activeStudents, teachers });
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -50,54 +66,7 @@ function AdminDashboardContent() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {user?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link
-                            href="/admin/dashboard"
-                            className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium"
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/admin/users"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Users
-                        </Link>
-                        <Link
-                            href="/admin/courses"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Courses
-                        </Link>
-                        <Link
-                            href="/admin/payments"
-                            className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1"
-                        >
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+            <AdminMobileNav user={user} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
