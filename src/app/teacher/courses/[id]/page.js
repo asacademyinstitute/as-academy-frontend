@@ -204,8 +204,9 @@ function TeacherCourseManageContent() {
                 const response = await streamingAPI.getVideoUrl(lecture.id);
                 url = response.data.data.url;
             } else if (lecture.type === 'pdf') {
-                const response = await streamingAPI.getPdfUrl(lecture.id);
-                url = response.data.data.url;
+                const response = await streamingAPI.getPdfStream(lecture.id);
+                const blob = new Blob([response.data], { type: 'application/pdf' });
+                url = URL.createObjectURL(blob);
             }
             setPreviewContent({ ...lecture, signed_url: url });
             setPreviewModal(lecture.type);
