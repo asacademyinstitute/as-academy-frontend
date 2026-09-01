@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import AdminMobileNav from '@/components/AdminMobileNav';
 import { topRankersAPI, streamingAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import { showToast } from '@/components/ui/toast';
+import { customConfirm } from '@/components/ui/custom-modal';
 
 export default function TopRankersPage() {
     const router = useRouter();
@@ -56,7 +58,7 @@ export default function TopRankersPage() {
             setPhotoUrls(urls);
         } catch (error) {
             console.error('Error fetching rankers:', error);
-            alert('Failed to fetch top rankers');
+            showToast('Failed to fetch top rankers', 'error');
         } finally {
             setLoading(false);
         }
@@ -77,10 +79,10 @@ export default function TopRankersPage() {
             const newValue = !showOnHomepage;
             await topRankersAPI.setVisibility(newValue);
             setShowOnHomepage(newValue);
-            alert(`Top Rankers section will now be ${newValue ? 'shown' : 'hidden'} on homepage`);
+            showToast(`Top Rankers section will now be ${newValue ? 'shown' : 'hidden'} on homepage`, 'success');
         } catch (error) {
             console.error('Error toggling visibility:', error);
-            alert('Failed to update visibility setting');
+            showToast('Failed to update visibility setting', 'error');
         } finally {
             setTogglingVisibility(false);
         }
@@ -91,13 +93,13 @@ export default function TopRankersPage() {
         if (file) {
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                alert('Please select an image file');
+                showToast('Please select an image file', 'warning');
                 return;
             }
 
             // Validate file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
-                alert('Image size should be less than 5MB');
+                showToast('Image size should be less than 5MB', 'warning');
                 return;
             }
 
@@ -139,24 +141,24 @@ export default function TopRankersPage() {
 
         // Validation
         if (!formData.name.trim()) {
-            alert('Please enter student name');
+            showToast('Please enter student name', 'warning');
             return;
         }
 
         if (!photoFile && !editingRanker) {
-            alert('Please select a photo');
+            showToast('Please select a photo', 'warning');
             return;
         }
 
         const percentage = parseFloat(formData.percentage);
         if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-            alert('Percentage must be between 0 and 100');
+            showToast('Percentage must be between 0 and 100', 'warning');
             return;
         }
 
         const rank = parseInt(formData.rank);
         if (isNaN(rank) || rank < 1) {
-            alert('Rank must be a positive number');
+            showToast('Rank must be a positive number', 'warning');
             return;
         }
 
@@ -177,17 +179,17 @@ export default function TopRankersPage() {
 
             if (editingRanker) {
                 await topRankersAPI.update(editingRanker.id, data);
-                alert('Top ranker updated successfully!');
+                showToast('Top ranker updated successfully!', 'success');
             } else {
                 await topRankersAPI.create(data);
-                alert('Top ranker added successfully!');
+                showToast('Top ranker added successfully!', 'success');
             }
 
             resetForm();
             fetchRankers();
         } catch (error) {
             console.error('Error saving ranker:', error);
-            alert(error.response?.data?.message || 'Failed to save top ranker');
+            showToast(error.response?.data?.message || 'Failed to save top ranker', 'error');
         }
     };
 
@@ -206,17 +208,18 @@ export default function TopRankersPage() {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Are you sure you want to delete this top ranker? This will also delete the photo from storage.')) {
+        const confirmed = await customConfirm('Are you sure you want to delete this top ranker? This will also delete the photo from storage.');
+        if (!confirmed) {
             return;
         }
 
         try {
             await topRankersAPI.delete(id);
-            alert('Top ranker deleted successfully!');
+            showToast('Top ranker deleted successfully!', 'success');
             fetchRankers();
         } catch (error) {
             console.error('Error deleting ranker:', error);
-            alert('Failed to delete top ranker');
+            showToast('Failed to delete top ranker', 'error');
         }
     };
 
@@ -226,7 +229,7 @@ export default function TopRankersPage() {
             fetchRankers();
         } catch (error) {
             console.error('Error toggling ranker:', error);
-            alert('Failed to toggle ranker status');
+            showToast('Failed to toggle ranker status', 'error');
         }
     };
 
@@ -251,12 +254,12 @@ export default function TopRankersPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background">
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
                 <AdminMobileNav user={user} onLogout={handleLogout} />
                 <div className="flex items-center justify-center min-h-screen">
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-4 text-gray-600">Loading...</p>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+                        <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
                     </div>
                 </div>
             </div>
@@ -264,11 +267,11 @@ export default function TopRankersPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <AdminMobileNav user={user} onLogout={handleLogout} />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h1 className="text-3xl font-bold">Top Rankers Management</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Top Rankers Management</h1>
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         <button
                             onClick={handleToggleVisibility}
@@ -292,48 +295,48 @@ export default function TopRankersPage() {
                 </div>
 
                 {/* Rankers Table */}
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Rank
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Photo
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Name
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Percentage
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Exam
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Status
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             {rankers.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
+                                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                                         No top rankers added yet. Click "Add Top Ranker" to get started.
                                     </td>
                                 </tr>
                             ) : (
                                 rankers.map((ranker) => (
-                                    <tr key={ranker.id}>
+                                    <tr key={ranker.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/30">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-2xl font-bold text-blue-600">#{ranker.rank}</span>
+                                            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">#{ranker.rank}</span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
+                                            <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden border border-gray-100 dark:border-gray-700">
                                                 <img
                                                     src={photoUrls[ranker.id] || '/default-avatar.png'}
                                                     alt={ranker.name}
@@ -343,20 +346,20 @@ export default function TopRankersPage() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{ranker.name}</div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{ranker.name}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-lg font-semibold text-green-600">{ranker.percentage}%</span>
+                                            <span className="text-lg font-semibold text-green-600 dark:text-green-400">{ranker.percentage}%</span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-500">{ranker.exam_name || '-'}</div>
+                                            <div className="text-sm text-gray-500 dark:text-gray-400">{ranker.exam_name || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <button
                                                 onClick={() => handleToggle(ranker.id)}
                                                 className={`px-3 py-1 rounded-full text-xs font-semibold ${ranker.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                                     }`}
                                             >
                                                 {ranker.is_active ? '✓ Show on Homepage' : '✗ Hidden'}
@@ -365,13 +368,13 @@ export default function TopRankersPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button
                                                 onClick={() => handleEdit(ranker)}
-                                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                                className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-4"
                                             >
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(ranker.id)}
-                                                className="text-red-600 hover:text-red-900"
+                                                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                                             >
                                                 Delete
                                             </button>
@@ -385,22 +388,22 @@ export default function TopRankersPage() {
 
                 {/* Add/Edit Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
                             <div className="p-6">
-                                <h2 className="text-2xl font-bold mb-6">
+                                <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
                                     {editingRanker ? 'Edit Top Ranker' : 'Add Top Ranker'}
                                 </h2>
 
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     {/* Photo Upload */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Student Photo *
                                         </label>
                                         <div className="flex items-center space-x-4">
                                             {photoPreview && (
-                                                <div className="h-24 w-24 rounded-full bg-gray-200 overflow-hidden">
+                                                <div className="h-24 w-24 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden border border-gray-200 dark:border-gray-700">
                                                     <img
                                                         src={photoPreview}
                                                         alt="Preview"
@@ -412,22 +415,22 @@ export default function TopRankersPage() {
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={handlePhotoChange}
-                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                                className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-950/40 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50"
                                             />
                                         </div>
-                                        <p className="mt-1 text-sm text-gray-500">Max size: 5MB. Formats: JPG, PNG</p>
+                                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Max size: 5MB. Formats: JPG, PNG</p>
                                     </div>
 
                                     {/* Name */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Student Name *
                                         </label>
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
                                             placeholder="Enter student name"
                                             required
                                         />
@@ -435,7 +438,7 @@ export default function TopRankersPage() {
 
                                     {/* Percentage */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Percentage *
                                         </label>
                                         <input
@@ -445,7 +448,7 @@ export default function TopRankersPage() {
                                             max="100"
                                             value={formData.percentage}
                                             onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
                                             placeholder="Enter percentage (0-100)"
                                             required
                                         />
@@ -453,7 +456,7 @@ export default function TopRankersPage() {
 
                                     {/* Rank */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             Rank *
                                         </label>
                                         <input
@@ -461,23 +464,23 @@ export default function TopRankersPage() {
                                             min="1"
                                             value={formData.rank}
                                             onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
                                             placeholder="Enter rank"
                                             required
                                         />
                                     </div>
 
-                                    {/* Exam Name */}
+                                    {/* Exam Name / Subject */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Exam Name (Optional)
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Exam / Subject / Course (Optional)
                                         </label>
                                         <input
                                             type="text"
                                             value={formData.exam_name}
                                             onChange={(e) => setFormData({ ...formData, exam_name: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="e.g., JEE Mains 2024"
+                                            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+                                            placeholder="e.g., Mathematics (95/100) or JEE Mains"
                                         />
                                     </div>
 
@@ -486,7 +489,7 @@ export default function TopRankersPage() {
                                         <button
                                             type="button"
                                             onClick={resetForm}
-                                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                                            className="px-6 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                                         >
                                             Cancel
                                         </button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
+export default function SecureVideoPlayer({ videoUrl, watermarkData, onEnded }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const [watermarkPosition, setWatermarkPosition] = useState({ x: 20, y: 20 });
@@ -112,6 +112,7 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData }) {
                 disablePictureInPicture
                 className="w-full aspect-video"
                 onContextMenu={handleContextMenu}
+                onEnded={onEnded}
             >
                 Your browser does not support the video tag.
             </video>

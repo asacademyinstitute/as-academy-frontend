@@ -28,7 +28,8 @@ interface SeoPage {
 
 export default function SeoHubPage() {
     const params = useParams();
-    const category = params.category as string; // 'msbte', 'bca', 'dbatu'
+    const slugArray = params.slug;
+    const category = (params.category || (Array.isArray(slugArray) ? slugArray[0] : slugArray)) as string; // 'msbte', 'bca', 'dbatu'
 
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [popularPages, setPopularPages] = useState<SeoPage[]>([]);
@@ -64,14 +65,14 @@ export default function SeoHubPage() {
 
             // Fetch subjects
             const subjectsRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/seo/category/${category}/subjects`
+                `${process.env.NEXT_PUBLIC_API_URL}/seo/category/${category}/subjects`
             );
             const subjectsData = await subjectsRes.json();
             setSubjects(subjectsData.data || []);
 
             // Fetch popular pages
             const pagesRes = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/seo/category/${category}?limit=12`
+                `${process.env.NEXT_PUBLIC_API_URL}/seo/category/${category}?limit=12`
             );
             const pagesData = await pagesRes.json();
             setPopularPages(pagesData.data || []);
@@ -164,7 +165,7 @@ export default function SeoHubPage() {
                             {popularPages.map((page) => (
                                 <a
                                     key={page.id}
-                                    href={page.url_slug}
+                                    href={`/${page.url_slug}`}
                                     className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-blue-500 transition-all"
                                 >
                                     <div className="flex items-start justify-between mb-3">

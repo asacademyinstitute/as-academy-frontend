@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/cn';
@@ -53,8 +54,15 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
                 <div className="max-w-7xl mx-auto container-padding">
                     <div className="flex justify-between items-center h-16">
                         {/* Brand */}
-                        <Link href={brand.href} className="flex items-center">
-                            <h1 className="text-xl md:text-2xl font-bold gradient-text">
+                        <Link href={brand.href} className="flex items-center gap-2">
+                            <Image
+                                src="/icons/icon-192x192.png"
+                                alt="AS Academy Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-contain"
+                            />
+                            <h1 className="text-lg font-bold gradient-text hidden sm:block">
                                 {brand.name}
                             </h1>
                         </Link>
@@ -254,8 +262,14 @@ function MobileBottomNav({ navItems, brandHref }: MobileBottomNavProps) {
                             <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 blur-[8px] opacity-70 group-hover:opacity-100 group-hover:scale-115 transition-all duration-300" />
                             
                             {/* The floating rounded badge itself */}
-                            <div className="relative w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 border-[3px] border-white dark:border-slate-900 shadow-premium flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95">
-                                <span className="text-white text-xs font-black tracking-wider leading-none select-none">AS</span>
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden border-[3px] border-white dark:border-slate-900 shadow-premium flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-active:scale-95 bg-white">
+                                <Image
+                                    src="/icons/icon-192x192.png"
+                                    alt="AS Academy Logo"
+                                    width={48}
+                                    height={48}
+                                    className="object-contain"
+                                />
                             </div>
 
                             {/* Micro brand name appearing on hover */}
@@ -315,8 +329,15 @@ export function DashboardNav({ brand, user, navItems, onLogout, actions }: Dashb
             <div className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto container-padding">
                     <div className="flex justify-between items-center h-16">
-                        <Link href={brand.href} className="flex items-center">
-                            <h1 className="text-xl md:text-2xl font-bold gradient-text">
+                        <Link href={brand.href} className="flex items-center gap-2">
+                            <Image
+                                src="/icons/icon-192x192.png"
+                                alt="AS Academy Logo"
+                                width={32}
+                                height={32}
+                                className="rounded-lg object-contain"
+                            />
+                            <h1 className="text-lg font-bold gradient-text hidden sm:block">
                                 {brand.name}
                             </h1>
                         </Link>

@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/utils';
 import { DashboardNav } from '@/components/ui/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Users, Video, User } from 'lucide-react';
+import { customAlert, customConfirm } from '@/components/ui/custom-modal';
 
 function TeacherStudentsContent() {
     const router = useRouter();
@@ -29,7 +30,7 @@ function TeacherStudentsContent() {
     const fetchData = async () => {
         try {
             // Get teacher's courses
-            const coursesRes = await coursesAPI.getAll({ teacherId: user.id });
+            const coursesRes = await coursesAPI.getAll({ teacherId: user.id, limit: 1000 });
             const teacherCourses = coursesRes.data.data.courses || [];
             setCourses(teacherCourses);
 
@@ -66,35 +67,35 @@ function TeacherStudentsContent() {
     };
 
     const handleBlockStudent = async (enrollmentId, studentName, courseName) => {
-        if (!confirm(`Block ${studentName} from "${courseName}"? They will lose access but the record will be kept.`)) return;
+        if (!await customConfirm(`Block ${studentName} from "${courseName}"? They will lose access but the record will be kept.`, 'Block Student')) return;
         try {
             await enrollmentAPI.cancelEnrollment(enrollmentId);
-            alert('Student blocked successfully');
+            customAlert('Student blocked successfully', 'Success');
             fetchData();
         } catch (error) {
-            alert('Failed to block student');
+            customAlert('Failed to block student', 'Error');
         }
     };
 
     const handleUnblockStudent = async (enrollmentId, studentName, courseName) => {
-        if (!confirm(`Unblock ${studentName} from "${courseName}"? They will regain access.`)) return;
+        if (!await customConfirm(`Unblock ${studentName} from "${courseName}"? They will regain access.`, 'Unblock Student')) return;
         try {
             await enrollmentAPI.unblockEnrollment(enrollmentId);
-            alert('Student unblocked successfully');
+            customAlert('Student unblocked successfully', 'Success');
             fetchData();
         } catch (error) {
-            alert('Failed to unblock student');
+            customAlert('Failed to unblock student', 'Error');
         }
     };
 
     const handleRemoveStudent = async (enrollmentId, studentName, courseName) => {
-        if (!confirm(`Permanently remove ${studentName} from "${courseName}"? This cannot be undone!`)) return;
+        if (!await customConfirm(`Permanently remove ${studentName} from "${courseName}"? This cannot be undone!`, 'Remove Student')) return;
         try {
             await enrollmentAPI.deleteEnrollment(enrollmentId);
-            alert('Student removed successfully');
+            customAlert('Student removed successfully', 'Success');
             fetchData();
         } catch (error) {
-            alert('Failed to remove student');
+            customAlert('Failed to remove student', 'Error');
         }
     };
 
@@ -118,7 +119,7 @@ function TeacherStudentsContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950 pb-24 md:pb-0">
+        <div className="min-h-screen bg-background dark:bg-gray-950 pb-24 md:pb-8">
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/teacher/dashboard' }}
@@ -129,22 +130,22 @@ function TeacherStudentsContent() {
             />
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 {/* Filters */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">All Students</h2>
-                    <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-card dark:bg-gray-900 border border-border rounded-xl shadow-soft p-5 sm:p-6 mb-6">
+                    <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4">All Students</h2>
+                    <div className="grid sm:grid-cols-2 gap-4">
                         <input
                             type="text"
                             placeholder="Search by name, email, or college..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-border bg-background dark:bg-gray-950 text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors text-sm"
                         />
                         <select
                             value={filterCourse}
                             onChange={(e) => setFilterCourse(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-border bg-background dark:bg-gray-950 text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors text-sm"
                         >
                             <option value="">All Courses</option>
                             {courses.map(course => (
@@ -154,10 +155,10 @@ function TeacherStudentsContent() {
                     </div>
                 </div>
 
-                {/* Students Table */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="px-6 py-4 border-b">
-                        <h3 className="text-xl font-bold text-gray-900">
+                {/* Students List Container */}
+                <div className="bg-card dark:bg-gray-900 border border-border rounded-xl shadow-soft overflow-hidden">
+                    <div className="px-5 py-4 border-b border-border bg-gray-50/50 dark:bg-gray-900/50">
+                        <h3 className="text-lg font-bold text-foreground">
                             Enrolled Students ({filteredStudents.length})
                         </h3>
                     </div>
@@ -167,91 +168,167 @@ function TeacherStudentsContent() {
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         </div>
                     ) : filteredStudents.length > 0 ? (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enrolled On</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valid Until</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredStudents.map((enrollment) => (
-                                        <tr key={enrollment.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {enrollment.users?.name}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {enrollment.users?.college_name || 'N/A'}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    Sem: {enrollment.users?.semester || 'N/A'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {enrollment.users?.email}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
+                        <>
+                            {/* Desktop View - Table */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="min-w-full divide-y divide-border">
+                                    <thead className="bg-gray-50/50 dark:bg-gray-800/30">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Course</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Enrolled On</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valid Until</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border bg-transparent">
+                                        {filteredStudents.map((enrollment) => (
+                                            <tr key={enrollment.id} className="hover:bg-muted/30 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm font-semibold text-foreground">
+                                                        {enrollment.users?.name}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                                        {enrollment.users?.college_name || 'N/A'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Sem: {enrollment.users?.semester || 'N/A'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                                    {enrollment.users?.email}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <Link
+                                                        href={`/teacher/courses/${enrollment.courseId}/students`}
+                                                        className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                                                    >
+                                                        {enrollment.courseName}
+                                                    </Link>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                                    {formatDate(enrollment.enrolled_at)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                                    {formatDate(enrollment.valid_until)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                                                        enrollment.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                                        enrollment.status === 'cancelled' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                        enrollment.status === 'expired' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                        'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                                                    }`}>
+                                                        {enrollment.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                                                    {enrollment.status === 'active' && (
+                                                        <button
+                                                            onClick={() => handleBlockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                            className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-semibold transition-colors"
+                                                        >
+                                                            Block
+                                                        </button>
+                                                    )}
+                                                    {enrollment.status === 'cancelled' && (
+                                                        <button
+                                                            onClick={() => handleUnblockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                            className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 font-semibold transition-colors"
+                                                        >
+                                                            Unblock
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleRemoveStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-semibold transition-colors"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile View - Card List */}
+                            <div className="md:hidden divide-y divide-border bg-card dark:bg-gray-900">
+                                {filteredStudents.map((enrollment) => (
+                                    <div key={enrollment.id} className="p-4 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-semibold text-foreground text-sm">{enrollment.users?.name}</h4>
+                                                <p className="text-[11px] text-muted-foreground mt-0.5">
+                                                    {enrollment.users?.college_name || 'College: N/A'}
+                                                </p>
+                                                <p className="text-[11px] text-muted-foreground">
+                                                    Semester: {enrollment.users?.semester || 'N/A'}
+                                                </p>
+                                            </div>
+                                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                                enrollment.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                                enrollment.status === 'cancelled' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                                                enrollment.status === 'expired' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                                            }`}>
+                                                {enrollment.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="text-xs space-y-1.5 text-muted-foreground">
+                                            <div>
+                                                <span>Email: </span>
+                                                <span className="text-foreground font-medium">{enrollment.users?.email}</span>
+                                            </div>
+                                            <div>
+                                                <span>Course: </span>
                                                 <Link
                                                     href={`/teacher/courses/${enrollment.courseId}/students`}
-                                                    className="text-sm text-blue-600 hover:text-blue-700"
+                                                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
                                                 >
                                                     {enrollment.courseName}
                                                 </Link>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {formatDate(enrollment.enrolled_at)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                                {formatDate(enrollment.valid_until)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`px-2 py-1 text-xs rounded ${enrollment.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                        enrollment.status === 'cancelled' ? 'bg-orange-100 text-orange-800' :
-                                                            enrollment.status === 'expired' ? 'bg-red-100 text-red-800' :
-                                                                'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                    {enrollment.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                                                {enrollment.status === 'active' && (
-                                                    <button
-                                                        onClick={() => handleBlockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
-                                                        className="text-orange-600 hover:text-orange-700 font-medium"
-                                                    >
-                                                        Block
-                                                    </button>
-                                                )}
-                                                {enrollment.status === 'cancelled' && (
-                                                    <button
-                                                        onClick={() => handleUnblockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
-                                                        className="text-green-600 hover:text-green-700 font-medium"
-                                                    >
-                                                        Unblock
-                                                    </button>
-                                                )}
+                                            </div>
+                                            <div className="flex justify-between text-[10px] pt-1 text-muted-foreground/80">
+                                                <span>Enrolled: {formatDate(enrollment.enrolled_at)}</span>
+                                                <span>Valid: {formatDate(enrollment.valid_until)}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-end gap-3 pt-2.5 border-t border-border text-xs">
+                                            {enrollment.status === 'active' && (
                                                 <button
-                                                    onClick={() => handleRemoveStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
-                                                    className="text-red-600 hover:text-red-700 font-medium"
+                                                    onClick={() => handleBlockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                    className="text-orange-600 dark:text-orange-400 hover:text-orange-700 font-semibold transition-colors"
                                                 >
-                                                    Remove
+                                                    Block
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                            )}
+                                            {enrollment.status === 'cancelled' && (
+                                                <button
+                                                    onClick={() => handleUnblockStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                    className="text-green-600 dark:text-green-400 hover:text-green-700 font-semibold transition-colors"
+                                                >
+                                                    Unblock
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleRemoveStudent(enrollment.id, enrollment.users?.name, enrollment.courseName)}
+                                                className="text-red-600 dark:text-red-400 hover:text-red-700 font-semibold transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500">
+                            <p className="text-muted-foreground text-sm">
                                 {searchTerm || filterCourse ? 'No students found matching your filters' : 'No students enrolled yet'}
                             </p>
                         </div>

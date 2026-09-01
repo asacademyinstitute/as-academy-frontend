@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { coursesAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import useAuthStore from '@/store/authStore';
+import { DashboardNav } from '@/components/ui/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 
 const CATEGORIES = ['All', 'Diploma', 'BTech', 'BCA', 'MCA', 'Coding'];
 const SEMESTERS = ['All', 'Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7', 'Sem 8'];
@@ -17,12 +21,25 @@ const SEM_MAP = {
 };
 
 export default function CoursesPage() {
+    const router = useRouter();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedSemester, setSelectedSemester] = useState('All');
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, logout } = useAuthStore();
+
+    const studentNavItems = [
+        { label: 'My Courses', href: '/student/dashboard', icon: <BookOpen className="w-5 h-5" /> },
+        { label: 'Certificates', href: '/student/certificates', icon: <Award className="w-5 h-5" /> },
+        { label: 'Profile', href: '/student/profile', icon: <User className="w-5 h-5" /> },
+        { label: 'Browse Courses', href: '/courses', icon: <ShoppingBag className="w-5 h-5" /> },
+    ];
+
+    const handleLogout = async () => {
+        await logout();
+        router.push('/');
+    };
 
     const getDashboardPath = () => {
         if (!user) return '/login';
@@ -35,7 +52,7 @@ export default function CoursesPage() {
 
     const fetchCourses = async () => {
         try {
-            const response = await coursesAPI.getAll({ status: 'active' });
+            const response = await coursesAPI.getAll({ status: 'active', limit: 1000 });
             setCourses(response.data?.data?.courses || []);
         } catch (error) {
             console.error('Error fetching courses:', error);
@@ -70,48 +87,59 @@ export default function CoursesPage() {
     const hasActiveFilters = search || selectedCategory !== 'All' || selectedSemester !== 'All';
 
     return (
-        <div className="min-h-screen" style={{ background: '#f1f5f9' }}>
+        <div className={`min-h-screen ${isAuthenticated && user?.role === 'student' ? 'pb-24 md:pb-0' : ''}`} style={{ background: '#f1f5f9' }}>
 
             {/* ── Top Nav ── */}
-            <header className="bg-white shadow-sm sticky top-0 z-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <Link href="/" className="text-xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        AS ACADEMY
-                    </Link>
-                    <div className="flex items-center gap-3">
-                        {isAuthenticated && user ? (
-                            <>
-                                <Link href={getDashboardPath()}
-                                    className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                                    Dashboard
-                                </Link>
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <Link href="/login" className="text-gray-600 hover:text-blue-600 text-sm font-medium">Login</Link>
-                                <Link href="/signup" className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 text-sm font-medium">Sign Up</Link>
-                            </>
-                        )}
+            {isAuthenticated && user && user.role === 'student' ? (
+                <DashboardNav
+                    brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
+                    user={{ name: user?.name || '', email: user?.email }}
+                    navItems={studentNavItems}
+                    onLogout={handleLogout}
+                    actions={<ThemeToggle />}
+                />
+            ) : (
+                <header className="bg-white shadow-sm sticky top-0 z-20">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                        <Link href="/" className="text-xl font-extrabold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            AS ACADEMY
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            {isAuthenticated && user ? (
+                                <>
+                                    <Link href={getDashboardPath()}
+                                        className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                                        Dashboard
+                                    </Link>
+                                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/login" className="text-gray-600 hover:text-blue-600 text-sm font-medium">Login</Link>
+                                    <Link href="/signup" className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 text-sm font-medium">Sign Up</Link>
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
+            )}
 
             {/* ── Hero Search ── */}
             <div className="bg-gradient-to-br from-blue-600 to-purple-700 py-10 px-4">
                 <div className="max-w-3xl mx-auto text-center">
                     <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Explore Courses</h1>
                     <p className="text-blue-100 text-sm mb-6">Find the perfect course for your academic journey</p>
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg">🔍</span>
+                    {/* Search Bar */}
+                    <div className="relative max-w-xl mx-auto">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg select-none">🔍</span>
                         <input
                             type="text"
                             placeholder="Search courses by name..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-white pl-11 pr-10 py-3 rounded-xl text-gray-800 text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-white/60"
+                            className="w-full pl-11 pr-10 py-3.5 rounded-xl bg-white text-gray-800 text-base shadow-lg border-2 border-white/40 focus:outline-none focus:border-blue-300 placeholder-gray-400"
                         />
                         {search && (
                             <button onClick={() => setSearch('')}
@@ -202,17 +230,19 @@ export default function CoursesPage() {
                                         <Link href={`/courses/${course.id}`}>
                                             <div className="bg-white rounded-2xl shadow hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer">
                                                 {/* Thumbnail */}
-                                                <div className="relative h-44 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
+                                                <div className="relative w-full aspect-video bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
                                                     {(course.thumbnail_url || course.thumbnail) ? (
-                                                        <img src={course.thumbnail_url || course.thumbnail}
+                                                        <img
+                                                            src={course.thumbnail_url || course.thumbnail}
                                                             alt={course.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                            onError={(e) => { e.target.style.display = 'none'; }} />
+                                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            onError={(e) => { e.target.style.display = 'none'; }}
+                                                        />
                                                     ) : (
                                                         <span className="text-6xl">📚</span>
                                                     )}
                                                     {/* Badges */}
-                                                    <div className="absolute top-3 left-3 flex gap-1.5">
+                                                    <div className="absolute top-3 left-3 flex gap-1.5 z-10">
                                                         {course.category && (
                                                             <span className="bg-white/90 backdrop-blur text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
                                                                 {course.category}

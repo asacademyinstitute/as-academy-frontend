@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { enrollmentAPI, userAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
-import { formatDate } from '@/lib/utils';
+import { formatDate, safeParseDate } from '@/lib/utils';
 import { DashboardNav } from '@/components/ui/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
@@ -43,7 +43,29 @@ function StudentDashboardContent() {
                 enrollmentAPI.getStudentEnrollments(user.id),
                 userAPI.getStats(user.id),
             ]);
-            setEnrollments(enrollmentsRes.data.data);
+            
+            const enrollmentsData = enrollmentsRes.data.data || [];
+            
+            // Fetch progress for each enrollment in parallel
+            const enrollmentsWithProgress = await Promise.all(
+                enrollmentsData.map(async (enrollment) => {
+                    try {
+                        const progressRes = await enrollmentAPI.getCourseProgress(enrollment.course_id);
+                        return {
+                            ...enrollment,
+                            progress: progressRes.data.data
+                        };
+                    } catch (err) {
+                        console.error(`Error fetching progress for course ${enrollment.course_id}:`, err);
+                        return {
+                            ...enrollment,
+                            progress: { totalLectures: 0, completedLectures: 0, progressPercentage: 0 }
+                        };
+                    }
+                })
+            );
+
+            setEnrollments(enrollmentsWithProgress);
             setStats(statsRes.data.data);
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -137,9 +159,10 @@ function StudentDashboardContent() {
                                                         <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                                                         </svg>
-                                                        {new Date(enrollment.courses.live_class_scheduled_at).toLocaleString('en-IN', {
+                                                        {safeParseDate(enrollment.courses.live_class_scheduled_at).toLocaleString('en-IN', {
                                                             dateStyle: 'full',
-                                                            timeStyle: 'short'
+                                                            timeStyle: 'short',
+                                                            timeZone: 'Asia/Kolkata'
                                                         })}
                                                     </div>
                                                 )}
@@ -194,8 +217,17 @@ function StudentDashboardContent() {
                                     onClick={(e) => handleCourseClick(e, enrollment)}
                                     className="bg-card dark:bg-gray-900 rounded-lg shadow-soft hover:shadow-medium transition-all hover-lift border border-border"
                                 >
-                                    <div className="h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-                                        <span className="text-white text-5xl">📚</span>
+                                    <div className="relative w-full aspect-video bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center overflow-hidden">
+                                        {(enrollment.courses.thumbnail_url || enrollment.courses.thumbnail) ? (
+                                            <img
+                                                src={enrollment.courses.thumbnail_url || enrollment.courses.thumbnail}
+                                                alt={enrollment.courses.title}
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                            />
+                                        ) : (
+                                            <span className="text-white text-5xl">📚</span>
+                                        )}
                                     </div>
                                     <div className="p-4 md:p-6">
                                         <h3 className="font-semibold text-foreground mb-2 text-base md:text-lg">
@@ -204,6 +236,23 @@ function StudentDashboardContent() {
                                         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                                             {enrollment.courses.description}
                                         </p>
+
+                                        {/* Progress Bar */}
+                                        <div className="mb-4">
+                                            <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+                                                <span>Progress</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {enrollment.progress?.completedLectures || 0} / {enrollment.progress?.totalLectures || 0} Lectures ({enrollment.progress?.progressPercentage || 0}%)
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-250 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                                                <div
+                                                    className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                                                    style={{ width: `${enrollment.progress?.progressPercentage || 0}%` }}
+                                                />
+                                            </div>
+                                        </div>
+
                                         <div className="flex justify-between items-center text-sm">
                                             <span className={`px-2 py-1 rounded ${enrollment.status === 'active'
                                                 ? 'bg-green-100 text-green-800'

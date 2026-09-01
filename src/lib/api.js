@@ -35,6 +35,15 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
+        // If error is 403 and the device session was invalidated
+        if (error.response?.status === 403 && error.response?.data?.code === 'DEVICE_SESSION_INVALID') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            window.location.href = '/login?error=device_session_invalid';
+            return Promise.reject(error);
+        }
+
         // If error is 401 and we haven't tried to refresh yet
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
@@ -85,10 +94,14 @@ export const authAPI = {
 export const coursesAPI = {
     getAll: (params) => api.get('/courses', { params }),
     getById: (id) => api.get(`/courses/${id}`),
+    getByTeacher: (teacherId) => api.get(`/courses/teacher/${teacherId}`),
     create: (data) => api.post('/courses', data),
     update: (id, data) => api.put(`/courses/${id}`, data),
     delete: (id) => api.delete(`/courses/${id}`),
     getStats: (id) => api.get(`/courses/${id}/stats`),
+    transferContent: (id, targetCourseId) => api.post(`/courses/${id}/transfer`, { targetCourseId }),
+    bulkUpdateStatus: (courseIds, status) => api.post('/courses/bulk-status', { courseIds, status }),
+    bulkDelete: (courseIds) => api.post('/courses/bulk-delete', { courseIds }),
 };
 
 export const enrollmentAPI = {
@@ -120,6 +133,7 @@ export const streamingAPI = {
     uploadFile: (formData) => api.post('/streaming/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     }),
+    getAdminDownloadUrl: (lectureId) => api.get(`/streaming/download/${lectureId}`),
 };
 
 export const lectureAPI = {
@@ -130,6 +144,7 @@ export const lectureAPI = {
     delete: (id) => api.delete(`/lectures/${id}`),
     getProgress: (id) => api.get(`/lectures/${id}/progress`),
     updateProgress: (id, data) => api.post(`/lectures/${id}/progress`, data),
+    transfer: (data) => api.post('/lectures/transfer', data),
 };
 
 export const chapterAPI = {
@@ -213,6 +228,7 @@ export const paymentAnalyticsAPI = {
     getByMonth: () => api.get('/payments/analytics/by-month'),
     getByCourse: () => api.get('/payments/analytics/by-course'),
     getFiltered: (params) => api.get('/payments/filtered', { params }),
+    getStats: () => api.get('/payments/stats'),
 };
 
 // Coupon API

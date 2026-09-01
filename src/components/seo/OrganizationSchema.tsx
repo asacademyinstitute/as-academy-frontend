@@ -20,6 +20,10 @@ export default function OrganizationSchema({
         "url": url,
         "logo": logo,
         "description": description,
+        "founder": {
+            "@type": "Person",
+            "name": "M Saad Shaikh"
+        },
         "address": {
             "@type": "PostalAddress",
             "addressCountry": "IN"

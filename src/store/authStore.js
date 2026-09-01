@@ -1,37 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import api from '@/lib/api';
-
-// Generate device fingerprint for device tracking
-const generateDeviceId = () => {
-    // Check if device_id already exists in localStorage
-    let deviceId = localStorage.getItem('device_id');
-
-    if (!deviceId) {
-        // Create fingerprint from browser characteristics
-        const userAgent = navigator.userAgent || '';
-        const screenResolution = `${screen.width}x${screen.height}`;
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-        const language = navigator.language || '';
-        const platform = navigator.platform || '';
-
-        // Combine characteristics and create hash
-        const fingerprint = `${userAgent}-${screenResolution}-${timezone}-${language}-${platform}`;
-
-        // Simple hash function
-        let hash = 0;
-        for (let i = 0; i < fingerprint.length; i++) {
-            const char = fingerprint.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
-        }
-
-        deviceId = Math.abs(hash).toString(16);
-        localStorage.setItem('device_id', deviceId);
-    }
-
-    return deviceId;
-};
+import { getDeviceId } from '@/lib/deviceFingerprint';
 
 const useAuthStore = create(
     persist(
@@ -58,6 +28,9 @@ const useAuthStore = create(
                 } else {
                     set({ isLoading: false });
                 }
+
+                // Generate/Load device fingerprint asynchronously on startup
+                getDeviceId().catch(err => console.error('Failed to initialize device ID:', err));
             },
 
             // Login
@@ -66,7 +39,7 @@ const useAuthStore = create(
                     set({ error: null, isLoading: true });
 
                     // Generate device ID for device tracking
-                    const deviceId = generateDeviceId();
+                    const deviceId = await getDeviceId();
 
                     const response = await api.post('/auth/login', {
                         email,
@@ -102,7 +75,7 @@ const useAuthStore = create(
                     set({ error: null, isLoading: true });
 
                     // Generate device ID for device tracking
-                    const deviceId = generateDeviceId();
+                    const deviceId = await getDeviceId();
 
                     const response = await api.post('/auth/register', { ...userData, deviceId });
                     const { user, accessToken, refreshToken } = response.data.data;

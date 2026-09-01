@@ -12,12 +12,33 @@ export function formatCurrency(amount) {
     }).format(amount);
 }
 
+export function safeParseDate(date) {
+    if (!date) return new Date();
+    if (date instanceof Date) return date;
+    
+    if (typeof date === 'string') {
+        // If it's ISO format without timezone offset (contains 'T' but no 'Z' and no +xx:xx / -xx:xx)
+        if (date.includes('T') && !date.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(date)) {
+            return new Date(date + 'Z');
+        }
+        // If it has spaces instead of T (e.g. yyyy-mm-dd hh:mm:ss)
+        if (!date.includes('T') && date.includes(' ')) {
+            const isoStr = date.replace(' ', 'T');
+            if (!isoStr.endsWith('Z') && !/[+-]\d{2}:\d{2}$/.test(isoStr)) {
+                return new Date(isoStr + 'Z');
+            }
+        }
+    }
+    return new Date(date);
+}
+
 export function formatDate(date) {
     return new Intl.DateTimeFormat('en-IN', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-    }).format(new Date(date));
+        timeZone: 'Asia/Kolkata',
+    }).format(safeParseDate(date));
 }
 
 export function formatDateTime(date) {
@@ -27,7 +48,8 @@ export function formatDateTime(date) {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-    }).format(new Date(date));
+        timeZone: 'Asia/Kolkata',
+    }).format(safeParseDate(date));
 }
 
 export function formatDuration(seconds) {

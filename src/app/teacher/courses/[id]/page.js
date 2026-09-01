@@ -6,11 +6,15 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { coursesAPI, chapterAPI, lectureAPI, streamingAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
+import { DashboardNav } from '@/components/ui/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { BookOpen, Users, Video, User } from 'lucide-react';
+import { customAlert, customConfirm, customPrompt } from '@/components/ui/custom-modal';
 
 function TeacherCourseManageContent() {
     const params = useParams();
     const router = useRouter();
-    const { user } = useAuthStore();
+    const { user, logout } = useAuthStore();
     const [course, setCourse] = useState(null);
     const [chapters, setChapters] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -45,7 +49,7 @@ function TeacherCourseManageContent() {
     };
 
     const handleAddChapter = async () => {
-        const title = prompt('Enter chapter title:');
+        const title = await customPrompt('Enter chapter title:', '', 'Add Chapter');
         if (!title) return;
 
         try {
@@ -56,38 +60,38 @@ function TeacherCourseManageContent() {
             });
             fetchCourseData();
         } catch (error) {
-            alert('Failed to create chapter');
+            await customAlert('Failed to create chapter', 'Error');
         }
     };
 
     const handleDeleteChapter = async (chapterId, chapterTitle) => {
-        if (!confirm(`Are you sure you want to delete chapter "${chapterTitle}" and all its lectures?`)) {
+        if (!await customConfirm(`Are you sure you want to delete chapter "${chapterTitle}" and all its lectures?`, 'Delete Chapter')) {
             return;
         }
 
         try {
             await chapterAPI.delete(chapterId);
-            alert('Chapter deleted successfully!');
+            await customAlert('Chapter deleted successfully!', 'Success');
             await fetchCourseData();
         } catch (error) {
             console.error('Failed to delete chapter:', error);
-            alert(`Failed to delete chapter: ${error.response?.data?.message || error.message}`);
+            await customAlert(`Failed to delete chapter: ${error.response?.data?.message || error.message}`, 'Error');
         }
     };
 
     const handleAddLecture = async (chapterId) => {
-        const title = prompt('Enter lecture title:');
+        const title = await customPrompt('Enter lecture title:', '', 'Add Lecture');
         if (!title) return;
 
         // Validate title length
         if (title.trim().length < 3) {
-            alert('Title must be at least 3 characters long');
+            await customAlert('Title must be at least 3 characters long', 'Validation Error');
             return;
         }
 
-        const type = prompt('Enter lecture type (video/pdf):', 'video');
+        const type = await customPrompt('Enter lecture type (video/pdf):', 'video', 'Lecture Type');
         if (!type || !['video', 'pdf'].includes(type.toLowerCase())) {
-            alert('Invalid type. Please use: video or pdf');
+            await customAlert('Invalid type. Please use: video or pdf', 'Validation Error');
             return;
         }
 
@@ -105,22 +109,22 @@ function TeacherCourseManageContent() {
             await fetchCourseData();
         } catch (error) {
             console.error('Failed to create lecture:', error);
-            alert(`Failed to create lecture: ${error.response?.data?.message || error.message}`);
+            await customAlert(`Failed to create lecture: ${error.response?.data?.message || error.message}`, 'Error');
         }
     };
 
     const handleDeleteLecture = async (lectureId, lectureTitle) => {
-        if (!confirm(`Are you sure you want to delete "${lectureTitle}"?`)) {
+        if (!await customConfirm(`Are you sure you want to delete "${lectureTitle}"?`, 'Delete Lecture')) {
             return;
         }
 
         try {
             await lectureAPI.delete(lectureId);
-            alert('Lecture deleted successfully!');
+            await customAlert('Lecture deleted successfully!', 'Success');
             await fetchCourseData();
         } catch (error) {
             console.error('Failed to delete lecture:', error);
-            alert(`Failed to delete lecture: ${error.response?.data?.message || error.message}`);
+            await customAlert(`Failed to delete lecture: ${error.response?.data?.message || error.message}`, 'Error');
         }
     };
 
@@ -131,7 +135,7 @@ function TeacherCourseManageContent() {
         // File size validation (500MB limit)
         const maxSize = 500 * 1024 * 1024; // 500MB
         if (file.size > maxSize) {
-            alert(`File is too large. Maximum size is 500MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+            await customAlert(`File is too large. Maximum size is 500MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`, 'File Too Large');
             event.target.value = ''; // Reset input
             return;
         }
@@ -139,7 +143,7 @@ function TeacherCourseManageContent() {
         // File type validation
         const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'application/pdf'];
         if (!allowedTypes.includes(file.type)) {
-            alert(`Invalid file type. Allowed types: MP4, WebM, OGG videos, or PDF. Your file type: ${file.type}`);
+            await customAlert(`Invalid file type. Allowed types: MP4, WebM, OGG videos, or PDF. Your file type: ${file.type}`, 'Invalid File Type');
             event.target.value = ''; // Reset input
             return;
         }
@@ -169,13 +173,13 @@ function TeacherCourseManageContent() {
 
             console.log('✅ Upload complete! Refreshing data...');
             await fetchCourseData();
-            alert('File uploaded successfully!');
+            await customAlert('File uploaded successfully!', 'Success');
         } catch (error) {
             console.error('❌ Upload failed:', error);
 
             // Show specific error message
             const errorMessage = error.response?.data?.message || error.message || 'Failed to upload file';
-            alert(`Upload failed: ${errorMessage}`);
+            await customAlert(`Upload failed: ${errorMessage}`, 'Upload Failed');
 
             // Log detailed error for debugging
             if (error.response) {
@@ -207,7 +211,7 @@ function TeacherCourseManageContent() {
             setPreviewModal(lecture.type);
         } catch (error) {
             console.error('Error fetching preview URL:', error);
-            alert('Failed to load preview. Please try again.');
+            await customAlert('Failed to load preview. Please try again.', 'Error');
         } finally {
             setPreviewLoading(false);
         }
@@ -218,23 +222,40 @@ function TeacherCourseManageContent() {
         setPreviewContent(null);
     };
 
+    const formatForDatetimeLocal = (dateStr) => {
+        if (!dateStr) return '';
+        try {
+            const date = new Date(dateStr);
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - offset * 60 * 1000);
+            return localDate.toISOString().slice(0, 16);
+        } catch (e) {
+            return '';
+        }
+    };
+
     const handleSaveLiveLink = async () => {
+        if (!liveClassTitle || !liveClassLink || !liveClassSchedule) {
+            await customAlert('Please fill in all fields', 'Validation Error');
+            return;
+        }
+
         try {
             await coursesAPI.update(params.id, {
                 live_class_link: liveClassLink,
-                live_class_scheduled_at: liveClassSchedule || null,
-                live_class_title: liveClassTitle || null
+                live_class_scheduled_at: new Date(liveClassSchedule).toISOString(),
+                live_class_title: liveClassTitle
             });
-            alert('Live class details updated successfully!');
+            await customAlert('Live class details updated successfully!', 'Success');
             setEditingLink(false);
             fetchCourseData();
         } catch (error) {
-            alert('Failed to update live class details');
+            await customAlert('Failed to update live class details', 'Error');
         }
     };
 
     const handleRemoveLiveLink = async () => {
-        if (!confirm('Are you sure you want to remove the live class link? This will clear all live class details.')) {
+        if (!await customConfirm('Are you sure you want to remove the live class link? This will clear all live class details.', 'Remove Live Class Link')) {
             return;
         }
 
@@ -244,51 +265,76 @@ function TeacherCourseManageContent() {
                 live_class_scheduled_at: null,
                 live_class_title: null
             });
-            alert('Live class link removed successfully!');
+            await customAlert('Live class link removed successfully!', 'Success');
             fetchCourseData();
         } catch (error) {
-            alert('Failed to remove live class link');
+            await customAlert('Failed to remove live class link', 'Error');
         }
     };
 
+    const handleLogout = async () => {
+        await logout();
+        router.push('/');
+    };
+
+    const navItems = [
+        { label: 'My Courses', href: '/teacher/dashboard', icon: <BookOpen className="w-5 h-5" /> },
+        { label: 'Students', href: '/teacher/students', icon: <Users className="w-5 h-5" /> },
+        { label: 'Live Classes', href: '/teacher/live-classes', icon: <Video className="w-5 h-5" /> },
+        { label: 'Profile', href: '/teacher/profile', icon: <User className="w-5 h-5" /> },
+    ];
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <Link href="/teacher/dashboard" className="text-blue-600 hover:text-blue-700">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24 md:pb-8">
+            {/* Navigation */}
+            <DashboardNav
+                brand={{ name: 'AS ACADEMY', href: '/teacher/dashboard' }}
+                user={{ name: user?.name || '', email: user?.email }}
+                navItems={navItems}
+                onLogout={handleLogout}
+                actions={<ThemeToggle />}
+            />
+
+            {/* Header / Breadcrumb */}
+            <div className="bg-white dark:bg-gray-900 border-b border-border shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center gap-3">
+                    <Link href="/teacher/dashboard" className="flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
                         ← Back to Dashboard
                     </Link>
+                    <span className="text-muted-foreground/30">|</span>
+                    <span className="text-muted-foreground text-sm font-medium truncate">{course?.title}</span>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{course?.title}</h1>
-                    <p className="text-gray-600">{course?.description}</p>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+                {/* Course Info */}
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">{course?.title}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{course?.description}</p>
                 </div>
 
                 {/* Live Class Link Section */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">Live Class Link</h2>
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">🎥 Live Class Link</h2>
                         {!editingLink && (
                             <button
                                 onClick={() => {
                                     setEditingLink(true);
                                     setLiveClassLink(course?.live_class_link || '');
-                                    setLiveClassSchedule(course?.live_class_scheduled_at || '');
+                                    setLiveClassSchedule(formatForDatetimeLocal(course?.live_class_scheduled_at));
                                     setLiveClassTitle(course?.live_class_title || '');
                                 }}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium transition w-full sm:w-auto"
                             >
                                 {course?.live_class_link ? 'Update Link' : 'Add Link'}
                             </button>
@@ -298,55 +344,40 @@ function TeacherCourseManageContent() {
                     {editingLink ? (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Live Class Title *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Live Class Title *</label>
                                 <input
                                     type="text"
                                     value={liveClassTitle}
                                     onChange={(e) => setLiveClassTitle(e.target.value)}
                                     placeholder="e.g., Introduction to React Hooks"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Meeting Link (Zoom, Google Meet, etc.)
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Meeting Link (Zoom, Google Meet, etc.)</label>
                                 <input
                                     type="url"
                                     value={liveClassLink}
                                     onChange={(e) => setLiveClassLink(e.target.value)}
                                     placeholder="https://zoom.us/j/123456789"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Scheduled Date & Time
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Scheduled Date & Time</label>
                                 <input
                                     type="datetime-local"
                                     value={liveClassSchedule}
                                     onChange={(e) => setLiveClassSchedule(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
-                                <p className="text-sm text-gray-500 mt-1">Students will see when the live class is scheduled</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Students will see when the live class is scheduled</p>
                             </div>
-                            <div className="flex space-x-3">
-                                <button
-                                    onClick={handleSaveLiveLink}
-                                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
-                                >
+                            <div className="flex flex-col sm:flex-row gap-3">
+                                <button onClick={handleSaveLiveLink} className="flex-1 bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 font-medium transition">
                                     Save Link
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        setEditingLink(false);
-                                        setLiveClassLink('');
-                                    }}
-                                    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300"
-                                >
+                                <button onClick={() => { setEditingLink(false); setLiveClassLink(''); }} className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                                     Cancel
                                 </button>
                             </div>
@@ -354,56 +385,39 @@ function TeacherCourseManageContent() {
                     ) : (
                         <div>
                             {course?.live_class_link ? (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <div className="text-sm text-blue-800 font-medium mb-1">Current Live Class:</div>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase mb-1">Current Live Class</div>
                                             {course.live_class_title && (
-                                                <div className="text-base font-semibold text-blue-900 mb-2">
-                                                    {course.live_class_title}
-                                                </div>
+                                                <div className="text-base font-semibold text-blue-900 dark:text-blue-100 mb-1">{course.live_class_title}</div>
                                             )}
-                                            <a
-                                                href={course.live_class_link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:text-blue-700 underline break-all text-sm"
-                                            >
+                                            <a href={course.live_class_link} target="_blank" rel="noopener noreferrer"
+                                                className="text-blue-600 dark:text-blue-400 hover:underline break-all text-sm">
                                                 {course.live_class_link}
                                             </a>
                                             {course.live_class_scheduled_at && (
-                                                <div className="mt-2 text-sm text-blue-700">
-                                                    <span className="font-medium">Scheduled:</span>{' '}
-                                                    {new Date(course.live_class_scheduled_at).toLocaleString('en-IN', {
-                                                        dateStyle: 'medium',
-                                                        timeStyle: 'short'
-                                                    })}
+                                                <div className="mt-1.5 text-sm text-blue-700 dark:text-blue-300">
+                                                    <span className="font-medium">Scheduled: </span>
+                                                    {new Date(course.live_class_scheduled_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}
                                                 </div>
                                             )}
                                         </div>
-
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(course.live_class_link);
-                                                    alert('Link copied to clipboard!');
-                                                }}
-                                                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm whitespace-nowrap"
-                                            >
-                                                Copy Link
+                                        <div className="flex gap-2 flex-shrink-0">
+                                            <button onClick={async () => { navigator.clipboard.writeText(course.live_class_link); await customAlert('Link copied!', 'Copied'); }}
+                                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 text-sm whitespace-nowrap font-medium">
+                                                Copy
                                             </button>
-                                            <button
-                                                onClick={handleRemoveLiveLink}
-                                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm whitespace-nowrap"
-                                            >
-                                                Remove Link
+                                            <button onClick={handleRemoveLiveLink}
+                                                className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 text-sm whitespace-nowrap font-medium">
+                                                Remove
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                                    <p className="text-gray-500">No live class link set for this course</p>
+                                <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm">No live class link set for this course</p>
                                 </div>
                             )}
                         </div>
@@ -411,111 +425,89 @@ function TeacherCourseManageContent() {
                 </div>
 
                 {/* Course Content */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
-                        <button
-                            onClick={handleAddChapter}
-                            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                        >
+                <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+                        <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">📚 Course Content</h2>
+                        <button onClick={handleAddChapter}
+                            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 text-sm font-medium transition w-full sm:w-auto">
                             + Add Chapter
                         </button>
                     </div>
 
                     {chapters.length > 0 ? (
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             {chapters.map((chapter, chapterIdx) => (
-                                <div key={chapter.id} className="border rounded-lg p-4">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-xl font-semibold text-gray-900">
+                                <div key={chapter.id} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                                    {/* Chapter Header */}
+                                    <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                             {chapterIdx + 1}. {chapter.title}
                                         </h3>
-                                        <div className="flex items-center space-x-2">
-                                            <button
-                                                onClick={() => handleAddLecture(chapter.id)}
-                                                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
-                                            >
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <button onClick={() => handleAddLecture(chapter.id)}
+                                                className="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 text-sm font-medium transition">
                                                 + Add Lecture
                                             </button>
-                                            <button
-                                                onClick={() => handleDeleteChapter(chapter.id, chapter.title)}
-                                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm"
-                                            >
-                                                Delete Chapter
+                                            <button onClick={() => handleDeleteChapter(chapter.id, chapter.title)}
+                                                className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 text-sm font-medium transition">
+                                                Delete
                                             </button>
                                         </div>
                                     </div>
 
+                                    {/* Lectures List */}
                                     {chapter.lectures && chapter.lectures.length > 0 ? (
-                                        <div className="space-y-3 ml-6">
+                                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
                                             {chapter.lectures.map((lecture, lectureIdx) => (
-                                                <div key={lecture.id} className="flex items-center justify-between bg-gray-50 p-3 rounded">
-                                                    <div className="flex-1">
-                                                        <span className="text-gray-900">
+                                                <div key={lecture.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white dark:bg-gray-900">
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                                             {chapterIdx + 1}.{lectureIdx + 1} {lecture.title}
                                                         </span>
-                                                        <span className="ml-2 text-xs text-gray-500">
-                                                            ({lecture.type})
+                                                        <span className="ml-2 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                                                            {lecture.type}
                                                         </span>
                                                         {lecture.file_url && (
-                                                            <span className="ml-2 text-xs text-green-600">
-                                                                ✓ {lecture.type === 'video' ? 'Video' : 'PDF'} uploaded
+                                                            <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">
+                                                                ✓ Uploaded
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center space-x-2">
+                                                    <div className="flex items-center flex-wrap gap-2">
                                                         {/* Video Upload */}
                                                         {lecture.type === 'video' && (
                                                             <>
-                                                                <label className="bg-blue-600 text-white px-4 py-2 rounded text-sm cursor-pointer hover:bg-blue-700">
+                                                                <label className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-blue-700 font-medium transition whitespace-nowrap">
                                                                     {lecture.file_url ? 'Replace Video' : 'Upload Video'}
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="video/*"
-                                                                        className="hidden"
-                                                                        onChange={(e) => handleFileUpload(lecture.id, e)}
-                                                                        disabled={uploading}
-                                                                    />
+                                                                    <input type="file" accept="video/*" className="hidden"
+                                                                        onChange={(e) => handleFileUpload(lecture.id, e)} disabled={uploading} />
                                                                 </label>
                                                                 {lecture.file_url && (
-                                                                    <button
-                                                                        onClick={() => handlePreview(lecture)}
-                                                                        className="bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700"
-                                                                    >
-                                                                        Preview Video
+                                                                    <button onClick={() => handlePreview(lecture)}
+                                                                        className="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-purple-700 font-medium transition whitespace-nowrap">
+                                                                        Preview
                                                                     </button>
                                                                 )}
                                                             </>
                                                         )}
-
                                                         {/* PDF Upload */}
                                                         {lecture.type === 'pdf' && (
                                                             <>
-                                                                <label className="bg-blue-600 text-white px-4 py-2 rounded text-sm cursor-pointer hover:bg-blue-700">
+                                                                <label className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs cursor-pointer hover:bg-blue-700 font-medium transition whitespace-nowrap">
                                                                     {lecture.file_url ? 'Replace PDF' : 'Upload PDF'}
-                                                                    <input
-                                                                        type="file"
-                                                                        accept="application/pdf"
-                                                                        className="hidden"
-                                                                        onChange={(e) => handleFileUpload(lecture.id, e)}
-                                                                        disabled={uploading}
-                                                                    />
+                                                                    <input type="file" accept="application/pdf" className="hidden"
+                                                                        onChange={(e) => handleFileUpload(lecture.id, e)} disabled={uploading} />
                                                                 </label>
                                                                 {lecture.file_url && (
-                                                                    <button
-                                                                        onClick={() => handlePreview(lecture)}
-                                                                        className="bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700"
-                                                                    >
+                                                                    <button onClick={() => handlePreview(lecture)}
+                                                                        className="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-purple-700 font-medium transition whitespace-nowrap">
                                                                         View PDF
                                                                     </button>
                                                                 )}
                                                             </>
                                                         )}
-
-                                                        <button
-                                                            onClick={() => handleDeleteLecture(lecture.id, lecture.title)}
-                                                            className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
-                                                        >
+                                                        <button onClick={() => handleDeleteLecture(lecture.id, lecture.title)}
+                                                            className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-red-700 font-medium transition">
                                                             Delete
                                                         </button>
                                                     </div>
@@ -523,72 +515,55 @@ function TeacherCourseManageContent() {
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-gray-500 text-sm ml-6">No lectures yet</p>
+                                        <p className="text-gray-400 dark:text-gray-500 text-sm px-4 py-4">No lectures yet. Add a lecture to get started.</p>
                                     )}
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500 mb-4">No chapters yet</p>
-                            <button
-                                onClick={handleAddChapter}
-                                className="text-blue-600 hover:text-blue-700 font-medium"
-                            >
+                        <div className="text-center py-16">
+                            <div className="text-5xl mb-3">📂</div>
+                            <p className="text-gray-500 dark:text-gray-400 mb-3 text-base">No chapters yet</p>
+                            <button onClick={handleAddChapter} className="text-blue-600 dark:text-blue-400 hover:underline font-medium text-sm">
                                 Create your first chapter
                             </button>
                         </div>
                     )}
 
+                    {/* Uploading overlay */}
                     {uploading && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg p-6">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                <p className="text-gray-900">Uploading file...</p>
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 flex flex-col items-center gap-3 shadow-2xl">
+                                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+                                <p className="text-gray-900 dark:text-white font-medium">Uploading file...</p>
+                                <p className="text-gray-400 dark:text-gray-500 text-xs">Please wait, do not close this tab</p>
                             </div>
                         </div>
                     )}
 
-                    {/* Preview Loading Overlay */}
+                    {/* Preview Loading */}
                     {previewLoading && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-lg p-6 flex flex-col items-center">
-                                <div className="animate-spin rounded-full h-10 w-10 border-2 border-t-transparent border-blue-600 mb-3"></div>
-                                <p className="text-gray-700 text-sm font-semibold">Generating secure preview...</p>
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 flex flex-col items-center gap-3">
+                                <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-200 border-t-blue-600"></div>
+                                <p className="text-gray-700 dark:text-gray-300 text-sm font-medium">Generating secure preview...</p>
                             </div>
                         </div>
                     )}
 
-                    {/* Preview Modals */}
+                    {/* Preview Modal */}
                     {previewModal && previewContent && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={closePreview}>
-                            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+                        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closePreview}>
+                            <div className="bg-white dark:bg-gray-900 rounded-xl p-5 max-w-4xl w-full mx-auto max-h-[90vh] overflow-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">{previewContent.title}</h3>
-                                    <button
-                                        onClick={closePreview}
-                                        className="text-gray-500 hover:text-gray-700 text-2xl"
-                                    >
-                                        ×
-                                    </button>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate pr-4">{previewContent.title}</h3>
+                                    <button onClick={closePreview} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl flex-shrink-0">×</button>
                                 </div>
-
-                                {/* Video Preview */}
                                 {previewModal === 'video' && (
-                                    <video
-                                        src={previewContent.signed_url || previewContent.file_url}
-                                        controls
-                                        className="w-full rounded"
-                                    />
+                                    <video src={previewContent.signed_url || previewContent.file_url} controls className="w-full rounded-lg" />
                                 )}
-
-                                {/* PDF Preview */}
                                 {previewModal === 'pdf' && (
-                                    <iframe
-                                        src={previewContent.signed_url || previewContent.file_url}
-                                        className="w-full h-[70vh] rounded border"
-                                        title="PDF Preview"
-                                    />
+                                    <iframe src={previewContent.signed_url || previewContent.file_url} className="w-full h-[65vh] rounded-lg border border-gray-200 dark:border-gray-700" title="PDF Preview" />
                                 )}
                             </div>
                         </div>

@@ -52,7 +52,7 @@ export default function SeoContentPage() {
     const fetchPageContent = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/seo/page/${slug}`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/seo/page/${slug}`);
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -78,7 +78,7 @@ export default function SeoContentPage() {
 
         // Track download
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/seo/track-download`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/seo/track-download`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ page_id: page.id })
@@ -210,7 +210,7 @@ export default function SeoContentPage() {
                                         {page.related_pages.map((relatedPage) => (
                                             <a
                                                 key={relatedPage.id}
-                                                href={relatedPage.url_slug}
+                                                href={`/${relatedPage.url_slug}`}
                                                 className="block p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                             >
                                                 <p className="font-medium text-gray-900 text-sm mb-1">

@@ -5,9 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import SecureVideoPlayer from '@/components/SecureVideoPlayer';
-import { coursesAPI, chapterAPI, streamingAPI } from '@/lib/api';
+import { coursesAPI, chapterAPI, streamingAPI, enrollmentAPI, lectureAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { ArrowLeft, PlayCircle, FileText, ChevronDown, ChevronRight, BookOpen, List, X } from 'lucide-react';
+import { safeParseDate } from '@/lib/utils';
 
 // Dynamically import SecurePDFViewer with SSR disabled to avoid DOMMatrix error
 const SecurePDFViewer = dynamic(() => import('@/components/SecurePDFViewer'), {
@@ -35,6 +36,7 @@ function CourseViewContent() {
     const [lectureLoading, setLectureLoading] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [expandedChapters, setExpandedChapters] = useState({});
+    const [progress, setProgress] = useState({ totalLectures: 0, completedLectures: 0, progressPercentage: 0, completedLectureIds: [] });
     const contentRef = useRef(null);
 
     useEffect(() => {
@@ -44,9 +46,10 @@ function CourseViewContent() {
 
     const fetchCourseData = async () => {
         try {
-            const [courseRes, chaptersRes] = await Promise.all([
+            const [courseRes, chaptersRes, progressRes] = await Promise.all([
                 coursesAPI.getById(params.id),
                 chapterAPI.getByCourse(params.id),
+                enrollmentAPI.getCourseProgress(params.id)
             ]);
             const fetchedCourse = courseRes.data.data;
             if (fetchedCourse && fetchedCourse.enrollment) {
@@ -64,6 +67,10 @@ function CourseViewContent() {
             const chapData = chaptersRes.data.data;
             setChapters(chapData);
 
+            if (progressRes?.data?.data) {
+                setProgress(progressRes.data.data);
+            }
+
             // Expand all chapters by default
             const expanded = {};
             chapData.forEach(ch => { expanded[ch.id] = true; });
@@ -73,6 +80,33 @@ function CourseViewContent() {
             console.error('Error fetching course:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLectureComplete = async (lectureId) => {
+        try {
+            await lectureAPI.updateProgress(lectureId, { completed: true });
+            // Refresh course progress stats and checkmarks
+            const progressRes = await enrollmentAPI.getCourseProgress(params.id);
+            if (progressRes?.data?.data) {
+                setProgress(progressRes.data.data);
+            }
+        } catch (error) {
+            console.error('Error updating progress:', error);
+        }
+    };
+
+    const handleToggleProgress = async (lectureId) => {
+        const isCompleted = progress.completedLectureIds?.includes(lectureId);
+        try {
+            await lectureAPI.updateProgress(lectureId, { completed: !isCompleted });
+            // Refresh course progress stats and checkmarks
+            const progressRes = await enrollmentAPI.getCourseProgress(params.id);
+            if (progressRes?.data?.data) {
+                setProgress(progressRes.data.data);
+            }
+        } catch (error) {
+            console.error('Error toggling progress:', error);
         }
     };
 
@@ -108,8 +142,15 @@ function CourseViewContent() {
                     const response = await streamingAPI.getVideoUrl(lecture.id);
                     setVideoUrl(response.data.data.url);
                 } else if (lecture.type === 'pdf') {
-                    const response = await streamingAPI.getPdfUrl(lecture.id);
-                    setVideoUrl(response.data.data.url);
+                    // Fetch PDF via authenticated stream to prevent direct URL sharing & CORS issues
+                    const response = await streamingAPI.getPdfStream(lecture.id);
+                    const blob = new Blob([response.data], { type: 'application/pdf' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    setVideoUrl(blobUrl);
+                    // Auto-complete PDF on load if not already completed
+                    if (!progress.completedLectureIds?.includes(lecture.id)) {
+                        handleLectureComplete(lecture.id);
+                    }
                 } else {
                     console.warn('Unknown lecture type:', lecture.type);
                 }
@@ -190,6 +231,7 @@ function CourseViewContent() {
                                             <SecureVideoPlayer
                                                 videoUrl={videoUrl}
                                                 watermarkData={watermark}
+                                                onEnded={() => handleLectureComplete(selectedLecture.id)}
                                             />
                                         )}
                                         {selectedLecture.type === 'pdf' && (
@@ -206,24 +248,51 @@ function CourseViewContent() {
                                     </div>
                                 )}
 
-                                {/* Lecture info */}
+                                {/* Lecture info with Manual Complete Toggle */}
                                 <div className="p-5 md:p-6">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`mt-0.5 p-2 rounded-lg flex-shrink-0 ${selectedLecture.type === 'pdf' ? 'bg-orange-100 dark:bg-orange-950 text-orange-600' : 'bg-blue-100 dark:bg-blue-950 text-blue-600'}`}>
-                                            {selectedLecture.type === 'pdf'
-                                                ? <FileText className="w-4 h-4" />
-                                                : <PlayCircle className="w-4 h-4" />
-                                            }
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3 min-w-0">
+                                            <div className={`mt-0.5 p-2 rounded-lg flex-shrink-0 ${selectedLecture.type === 'pdf' ? 'bg-orange-100 dark:bg-orange-950 text-orange-600' : 'bg-blue-100 dark:bg-blue-950 text-blue-600'}`}>
+                                                {selectedLecture.type === 'pdf'
+                                                    ? <FileText className="w-4 h-4" />
+                                                    : <PlayCircle className="w-4 h-4" />
+                                                }
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h2 className="text-lg md:text-xl font-bold text-foreground truncate">
+                                                    {selectedLecture.title}
+                                                </h2>
+                                                {selectedLecture.description && (
+                                                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                                                        {selectedLecture.description}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h2 className="text-lg md:text-xl font-bold text-foreground">
-                                                {selectedLecture.title}
-                                            </h2>
-                                            {selectedLecture.description && (
-                                                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                                                    {selectedLecture.description}
-                                                </p>
-                                            )}
+
+                                        <div className="flex-shrink-0 sm:self-center">
+                                            <button
+                                                onClick={() => handleToggleProgress(selectedLecture.id)}
+                                                className={`w-full sm:w-auto px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 border ${
+                                                    progress.completedLectureIds?.includes(selectedLecture.id)
+                                                        ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-950/50'
+                                                        : 'bg-white dark:bg-gray-800 border-border text-foreground hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm'
+                                                }`}
+                                            >
+                                                {progress.completedLectureIds?.includes(selectedLecture.id) ? (
+                                                    <>
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span>Completed</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-4 h-4 rounded-full border-2 border-muted-foreground"></div>
+                                                        <span>Mark as Complete</span>
+                                                    </>
+                                                )}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -275,6 +344,7 @@ function CourseViewContent() {
                             toggleChapter={toggleChapter}
                             handleLectureSelect={handleLectureSelect}
                             lectureLoading={lectureLoading}
+                            progress={progress}
                         />
                     </aside>
                 </div>
@@ -305,6 +375,7 @@ function CourseViewContent() {
                                 toggleChapter={toggleChapter}
                                 handleLectureSelect={handleLectureSelect}
                                 lectureLoading={lectureLoading}
+                                progress={progress}
                             />
                         </div>
                     </div>
@@ -315,15 +386,26 @@ function CourseViewContent() {
 }
 
 /* ── Sidebar Component (shared by desktop + mobile drawer) ─── */
-function SidebarContent({ course, chapters, selectedLecture, expandedChapters, toggleChapter, handleLectureSelect, lectureLoading }) {
+function SidebarContent({ course, chapters, selectedLecture, expandedChapters, toggleChapter, handleLectureSelect, lectureLoading, progress }) {
     return (
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-soft border border-border overflow-hidden">
-            {/* Course title */}
+            {/* Course title & Progress */}
             <div className="px-4 py-4 border-b border-border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40">
                 <h3 className="font-bold text-foreground text-sm leading-snug">{course?.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                    {chapters.reduce((s, c) => s + (c.lectures?.length || 0), 0)} lectures
-                </p>
+                <div className="mt-3">
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1">
+                        <span>Course Progress</span>
+                        <span className="font-semibold text-foreground">
+                            {progress?.completedLectures || 0} / {progress?.totalLectures || 0} Completed ({progress?.progressPercentage || 0}%)
+                        </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                        <div
+                            className="bg-green-600 dark:bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${progress?.progressPercentage || 0}%` }}
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* Live class */}
@@ -334,7 +416,7 @@ function SidebarContent({ course, chapters, selectedLecture, expandedChapters, t
                     </p>
                     {course.live_class_scheduled_at && (
                         <p className="text-[10px] text-green-700 dark:text-green-500 mb-2">
-                            {new Date(course.live_class_scheduled_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                            {safeParseDate(course.live_class_scheduled_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' })}
                         </p>
                     )}
                     <a
@@ -372,6 +454,7 @@ function SidebarContent({ course, chapters, selectedLecture, expandedChapters, t
                                 {chapter.lectures.map((lecture, lectureIdx) => {
                                     const isActive = selectedLecture?.id === lecture.id;
                                     const isPdf = lecture.type === 'pdf';
+                                    const isCompleted = progress?.completedLectureIds?.includes(lecture.id);
                                     return (
                                         <button
                                             key={lecture.id}
@@ -406,8 +489,14 @@ function SidebarContent({ course, chapters, selectedLecture, expandedChapters, t
                                                 </p>
                                             </div>
 
-                                            {/* Active indicator */}
-                                            {isActive && (
+                                            {/* Completed / Active Indicator */}
+                                            {isCompleted ? (
+                                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-950/50 flex items-center justify-center text-green-600 dark:text-green-400">
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            ) : isActive && (
                                                 <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400"></div>
                                             )}
                                         </button>

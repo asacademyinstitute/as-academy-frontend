@@ -40,9 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Backend - separate git repo, do not track from frontend
-/backend/
 /backend-repo/
-/backend-repo-OLD/
-/frontend/
+/backend/
 /frontend-repo-clean/

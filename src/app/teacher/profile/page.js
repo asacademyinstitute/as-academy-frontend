@@ -9,6 +9,7 @@ import useAuthStore from '@/store/authStore';
 import { DashboardNav } from '@/components/ui/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Users, Video, User } from 'lucide-react';
+import { customAlert } from '@/components/ui/custom-modal';
 
 function TeacherProfileContent() {
     const router = useRouter();
@@ -41,9 +42,9 @@ function TeacherProfileContent() {
             await userAPI.update(user.id, formData);
             updateUser(formData);
             setEditing(false);
-            alert('Profile updated successfully!');
+            customAlert('Profile updated successfully!', 'Success');
         } catch (error) {
-            alert('Failed to update profile');
+            customAlert('Failed to update profile', 'Error');
         }
     };
 
@@ -51,7 +52,7 @@ function TeacherProfileContent() {
         e.preventDefault();
 
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            alert('New passwords do not match');
+            customAlert('New passwords do not match', 'Validation Error');
             return;
         }
 
@@ -62,9 +63,9 @@ function TeacherProfileContent() {
             });
             setChangingPassword(false);
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            alert('Password changed successfully!');
+            customAlert('Password changed successfully!', 'Success');
         } catch (error) {
-            alert('Failed to change password');
+            customAlert('Failed to change password', 'Error');
         }
     };
 

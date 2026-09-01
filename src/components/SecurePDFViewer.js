@@ -36,23 +36,24 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                     ).toString();
                 }
 
-                // Manually fetch the PDF first to isolate network issues
-                const response = await fetch(pdfUrl);
+                let targetUrl = pdfUrl;
+                let createdBlobUrl = null;
 
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                if (!pdfUrl.startsWith('blob:')) {
+                    // Manually fetch if it's a remote URL
+                    const response = await fetch(pdfUrl);
+                    if (!response.ok) {
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    }
+                    const blob = await response.blob();
+                    targetUrl = URL.createObjectURL(blob);
+                    createdBlobUrl = targetUrl;
                 }
-
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-
-                console.log('2. Fetch successful, blob size:', blob.size);
-                console.log('3. Initializing PDF.js with blob URL');
 
                 // Configure loading task using the Blob URL
                 const loadingTask = pdfjsLib.getDocument({
-                    url: url,
-                    withCredentials: false // Not needed for blob URLs
+                    url: targetUrl,
+                    withCredentials: false
                 });
 
                 // Add progress listener

@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import AdminMobileNav from '@/components/AdminMobileNav';
 import { userAPI, enrollmentAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { formatDate } from '@/lib/utils';
+import { customConfirm } from '@/components/ui/custom-modal';
+import { showToast } from '@/components/ui/toast';
 
 function AdminUserDetailContent() {
     const params = useParams();
@@ -31,7 +34,7 @@ function AdminUserDetailContent() {
             setEnrollments(enrollmentsRes.data.data || []);
         } catch (error) {
             console.error('Error fetching user data:', error);
-            alert('Failed to load user data');
+            showToast('Failed to load user data', 'error');
             router.push('/admin/users');
         } finally {
             setLoading(false);
@@ -40,55 +43,62 @@ function AdminUserDetailContent() {
 
     const handleStatusToggle = async () => {
         const newStatus = user.status === 'active' ? 'blocked' : 'active';
+        const action = newStatus === 'blocked' ? 'Block' : 'Unblock';
+        const confirmed = await customConfirm(`${action} "${user.name}"? ${newStatus === 'blocked' ? 'They will lose access to the platform.' : 'They will regain access.'}`, `${action} User`);
+        if (!confirmed) return;
         try {
             await userAPI.updateStatus(user.id, newStatus);
             setUser({ ...user, status: newStatus });
-            alert(`User ${newStatus === 'active' ? 'activated' : 'blocked'} successfully`);
+            showToast(`User ${newStatus === 'active' ? 'unblocked' : 'blocked'} successfully`, 'success');
         } catch (error) {
-            alert('Failed to update user status');
+            showToast('Failed to update user status', 'error');
         }
     };
 
     const handleResetDevice = async () => {
-        if (!confirm('Reset device for this user? This will allow them to login on a new device.')) return;
+        const confirmed = await customConfirm('Reset device for this user? This will allow them to login on a new device.', 'Reset Device');
+        if (!confirmed) return;
         try {
             await userAPI.resetDevice(user.id);
-            alert('Device reset successfully');
+            showToast('Device reset successfully', 'success');
         } catch (error) {
-            alert('Failed to reset device');
+            showToast('Failed to reset device', 'error');
         }
     };
 
     const handleBlockFromCourse = async (enrollmentId, courseTitle) => {
-        if (!confirm(`Block student from "${courseTitle}"? This will cancel their enrollment but keep the record.`)) return;
+        const confirmed = await customConfirm(`Block student from "${courseTitle}"? This will cancel their enrollment but keep the record.`, 'Block from Course');
+        if (!confirmed) return;
         try {
             await enrollmentAPI.cancelEnrollment(enrollmentId);
-            alert('Student blocked from course successfully');
-            fetchUserData(); // Refresh enrollments
+            showToast('Student blocked from course successfully', 'success');
+            fetchUserData();
         } catch (error) {
-            alert('Failed to block student from course');
+            showToast('Failed to block student from course', 'error');
         }
     };
 
     const handleRemoveEnrollment = async (enrollmentId, courseTitle) => {
-        if (!confirm(`Permanently remove enrollment from "${courseTitle}"? This action cannot be undone!`)) return;
+        const confirmed = await customConfirm(`Permanently remove enrollment from "${courseTitle}"? This action cannot be undone!`, 'Remove Enrollment');
+        if (!confirmed) return;
         try {
             await enrollmentAPI.deleteEnrollment(enrollmentId);
-            alert('Enrollment removed successfully');
-            fetchUserData(); // Refresh enrollments
+            showToast('Enrollment removed successfully', 'success');
+            fetchUserData();
         } catch (error) {
-            alert('Failed to remove enrollment');
+            showToast('Failed to remove enrollment', 'error');
         }
     };
 
     const handleUnblockFromCourse = async (enrollmentId, courseTitle) => {
-        if (!confirm(`Unblock student from "${courseTitle}"? This will restore their access.`)) return;
+        const confirmed = await customConfirm(`Unblock student from "${courseTitle}"? This will restore their access.`, 'Unblock from Course');
+        if (!confirmed) return;
         try {
             await enrollmentAPI.unblockEnrollment(enrollmentId);
-            alert('Student unblocked from course successfully');
-            fetchUserData(); // Refresh enrollments
+            showToast('Student unblocked from course successfully', 'success');
+            fetchUserData();
         } catch (error) {
-            alert('Failed to unblock student from course');
+            showToast('Failed to unblock student from course', 'error');
         }
     };
 
@@ -99,7 +109,7 @@ function AdminUserDetailContent() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
@@ -107,10 +117,10 @@ function AdminUserDetailContent() {
 
     if (!user) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950">
                 <div className="text-center">
-                    <p className="text-gray-500 mb-4">User not found</p>
-                    <Link href="/admin/users" className="text-blue-600 hover:text-blue-700">
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">User not found</p>
+                    <Link href="/admin/users" className="text-blue-600 dark:text-blue-400 hover:text-blue-700">
                         Back to Users
                     </Link>
                 </div>
@@ -119,63 +129,28 @@ function AdminUserDetailContent() {
     }
 
     return (
-        <div className="min-h-screen bg-background dark:bg-gray-950">
-            {/* Header */}
-            <div className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            AS ACADEMY - Admin
-                        </h1>
-                        <div className="flex items-center space-x-4">
-                            <span className="text-gray-700">Admin: {currentUser?.name}</span>
-                            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-                                Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="bg-white border-b">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-8">
-                        <Link href="/admin/dashboard" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Dashboard
-                        </Link>
-                        <Link href="/admin/users" className="border-b-2 border-blue-600 text-blue-600 py-4 px-1 font-medium">
-                            Users
-                        </Link>
-                        <Link href="/admin/courses" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Courses
-                        </Link>
-                        <Link href="/admin/payments" className="border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-4 px-1">
-                            Payments
-                        </Link>
-                    </nav>
-                </div>
-            </div>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+            <AdminMobileNav user={currentUser} onLogout={handleLogout} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
-                    <Link href="/admin/users" className="text-blue-600 hover:text-blue-700">
+                    <Link href="/admin/users" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium">
                         ← Back to Users
                     </Link>
                 </div>
 
                 {/* User Info Card */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
                     <div className="flex justify-between items-start mb-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">{user.name}</h2>
-                            <p className="text-gray-600">{user.email}</p>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{user.name}</h2>
+                            <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
                         </div>
                         <div className="flex space-x-2">
                             <button
                                 onClick={handleStatusToggle}
-                                className={`px-4 py-2 rounded-lg font-medium ${user.status === 'active'
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${user.status === 'active'
                                     ? 'bg-red-600 text-white hover:bg-red-700'
                                     : 'bg-green-600 text-white hover:bg-green-700'
                                     }`}
@@ -185,7 +160,7 @@ function AdminUserDetailContent() {
                             {user.role === 'student' && (
                                 <button
                                     onClick={handleResetDevice}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                                 >
                                     Reset Device
                                 </button>
@@ -195,46 +170,52 @@ function AdminUserDetailContent() {
 
                     <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                            <h3 className="text-sm font-medium text-gray-500 mb-2">User Details</h3>
+                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">User Details</h3>
                             <div className="space-y-2">
                                 <div>
-                                    <span className="text-sm text-gray-600">Phone:</span>
-                                    <span className="ml-2 text-sm text-gray-900">{user.phone || 'N/A'}</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Phone:</span>
+                                    <span className="ml-2 text-sm text-gray-900 dark:text-white">{user.phone || 'N/A'}</span>
                                 </div>
                                 <div>
-                                    <span className="text-sm text-gray-600">Role:</span>
-                                    <span className={`ml-2 px-2 py-1 text-xs rounded capitalize ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                        user.role === 'teacher' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-green-100 text-green-800'
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Role:</span>
+                                    <span className={`ml-2 px-2 py-1 text-xs rounded-full font-medium capitalize ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400' :
+                                        user.role === 'teacher' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400' :
+                                            'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400'
                                         }`}>
                                         {user.role}
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-sm text-gray-600">Status:</span>
-                                    <span className={`ml-2 px-2 py-1 text-xs rounded ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+                                    <span className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${user.status === 'active'
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400'
+                                        : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
                                         }`}>
                                         {user.status}
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-sm text-gray-600">Joined:</span>
-                                    <span className="ml-2 text-sm text-gray-900">{formatDate(user.created_at)}</span>
+                                    <span className="text-sm text-gray-500 dark:text-gray-400">Joined:</span>
+                                    <span className="ml-2 text-sm text-gray-900 dark:text-white">{formatDate(user.created_at)}</span>
                                 </div>
                             </div>
                         </div>
 
                         {user.role === 'student' && (
                             <div>
-                                <h3 className="text-sm font-medium text-gray-500 mb-2">Student Info</h3>
+                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Student Info</h3>
                                 <div className="space-y-2">
                                     <div>
-                                        <span className="text-sm text-gray-600">College:</span>
-                                        <span className="ml-2 text-sm text-gray-900">{user.college_name || 'N/A'}</span>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">Enrollment No:</span>
+                                        <span className="ml-2 text-sm text-gray-900 dark:text-white font-medium">{user.enrollment_number || 'N/A'}</span>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-600">Semester:</span>
-                                        <span className="ml-2 text-sm text-gray-900">{user.semester || 'N/A'}</span>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">College:</span>
+                                        <span className="ml-2 text-sm text-gray-900 dark:text-white">{user.college_name || 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">Semester:</span>
+                                        <span className="ml-2 text-sm text-gray-900 dark:text-white">{user.semester || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -244,36 +225,38 @@ function AdminUserDetailContent() {
 
                 {/* Enrollments (for students) */}
                 {user.role === 'student' && (
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Enrolled Courses</h3>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Enrolled Courses</h3>
                         {enrollments.length > 0 ? (
                             <div className="space-y-4">
                                 {enrollments.map((enrollment) => (
-                                    <div key={enrollment.id} className="border rounded-lg p-4">
+                                    <div key={enrollment.id} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <h4 className="font-semibold text-gray-900">{enrollment.courses.title}</h4>
-                                                <p className="text-sm text-gray-600 mt-1">
+                                                <h4 className="font-semibold text-gray-900 dark:text-white">{enrollment.courses.title}</h4>
+                                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                     Enrolled: {formatDate(enrollment.enrolled_at)}
                                                 </p>
-                                                <p className="text-sm text-gray-600">
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
                                                     Valid until: {formatDate(enrollment.valid_until)}
                                                 </p>
                                             </div>
-                                            <span className={`px-2 py-1 text-xs rounded ${enrollment.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                enrollment.status === 'expired' ? 'bg-red-100 text-red-800' :
-                                                    'bg-gray-100 text-gray-800'
+                                            <span className={`px-2 py-1 text-xs rounded-full font-medium ${enrollment.status === 'active'
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400'
+                                                : enrollment.status === 'expired'
+                                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'
+                                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                                                 }`}>
                                                 {enrollment.status}
                                             </span>
                                         </div>
 
                                         {/* Action Buttons */}
-                                        <div className="flex space-x-2 mt-3 pt-3 border-t">
+                                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                             {enrollment.status === 'active' && (
                                                 <button
                                                     onClick={() => handleBlockFromCourse(enrollment.id, enrollment.courses.title)}
-                                                    className="px-3 py-1.5 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
+                                                    className="px-3 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
                                                 >
                                                     Block from Course
                                                 </button>
@@ -281,14 +264,14 @@ function AdminUserDetailContent() {
                                             {enrollment.status === 'cancelled' && (
                                                 <button
                                                     onClick={() => handleUnblockFromCourse(enrollment.id, enrollment.courses.title)}
-                                                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
                                                 >
                                                     Unblock from Course
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => handleRemoveEnrollment(enrollment.id, enrollment.courses.title)}
-                                                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                                                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
                                             >
                                                 Remove Enrollment
                                             </button>
@@ -297,7 +280,7 @@ function AdminUserDetailContent() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-gray-500 text-center py-8">No enrollments yet</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-8">No enrollments yet</p>
                         )}
                     </div>
                 )}
