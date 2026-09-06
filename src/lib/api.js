@@ -127,6 +127,12 @@ export const paymentAPI = {
 
 export const streamingAPI = {
     getVideoUrl: (lectureId) => api.get(`/streaming/video/${lectureId}`),
+    getVideoStreamUrl: (lectureId) => {
+        const token = (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : '') || '';
+        const deviceId = (typeof window !== 'undefined' ? localStorage.getItem('device_id') : '') || '';
+        const base = API_BASE_URL.replace(/\/+$/, '');
+        return `${base}/streaming/stream/video/${lectureId}?token=${encodeURIComponent(token)}&deviceId=${encodeURIComponent(deviceId)}`;
+    },
     getPdfUrl: (lectureId) => api.get(`/streaming/pdf/${lectureId}`),
     getPdfStream: (lectureId) => api.get(`/streaming/stream/pdf/${lectureId}`, { responseType: 'blob' }),
     getWatermark: () => api.get('/streaming/watermark'),

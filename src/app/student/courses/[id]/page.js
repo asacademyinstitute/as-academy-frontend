@@ -139,8 +139,8 @@ function CourseViewContent() {
             setLectureLoading(true);
             try {
                 if (lecture.type === 'video') {
-                    const response = await streamingAPI.getVideoUrl(lecture.id);
-                    setVideoUrl(response.data.data.url);
+                    const streamUrl = streamingAPI.getVideoStreamUrl(lecture.id);
+                    setVideoUrl(streamUrl);
                 } else if (lecture.type === 'pdf') {
                     // Fetch PDF via authenticated stream to prevent direct URL sharing & CORS issues
                     const response = await streamingAPI.getPdfStream(lecture.id);

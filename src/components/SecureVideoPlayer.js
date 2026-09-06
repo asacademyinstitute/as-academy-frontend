@@ -8,8 +8,6 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData, onEnded }) 
     const [watermarkPosition, setWatermarkPosition] = useState({ x: 20, y: 20 });
     const [isFullscreen, setIsFullscreen] = useState(false);
 
-    console.log('🎬 SecureVideoPlayer rendered with:', { videoUrl, watermarkData });
-
     // Move watermark position every 2.5 seconds
     useEffect(() => {
         const interval = setInterval(() => {
@@ -20,7 +18,6 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData, onEnded }) 
             const newY = Math.random() * maxY;
 
             setWatermarkPosition({ x: newX, y: newY });
-            console.log('📍 Watermark position updated:', { x: newX, y: newY });
         }, 2500);
 
         return () => clearInterval(interval);
@@ -83,18 +80,12 @@ export default function SecureVideoPlayer({ videoUrl, watermarkData, onEnded }) 
     }
 
     // Prepare watermark text
-    console.log('🔍 Full watermarkData object:', JSON.stringify(watermarkData, null, 2));
-
     const email = watermarkData?.email || 'No Email';
     const phone = watermarkData?.phone || 'No Phone';
 
     const watermarkText = watermarkData
         ? `${email} | ${phone}`
         : 'Protected Content';
-
-    console.log('💧 Watermark text:', watermarkText);
-    console.log('📧 Email:', email);
-    console.log('📱 Phone:', phone);
 
     return (
         <div

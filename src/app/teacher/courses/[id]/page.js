@@ -201,8 +201,7 @@ function TeacherCourseManageContent() {
         try {
             let url = lecture.file_url;
             if (lecture.type === 'video') {
-                const response = await streamingAPI.getVideoUrl(lecture.id);
-                url = response.data.data.url;
+                url = streamingAPI.getVideoStreamUrl(lecture.id);
             } else if (lecture.type === 'pdf') {
                 const response = await streamingAPI.getPdfStream(lecture.id);
                 const blob = new Blob([response.data], { type: 'application/pdf' });
