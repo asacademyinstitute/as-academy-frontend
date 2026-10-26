@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -17,6 +17,71 @@ function CertificatesContent() {
     const [enrollments, setEnrollments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState({});
+    const [showConfetti, setShowConfetti] = useState(false);
+    const canvasRef = useRef(null);
+
+    // ── Confetti Animation ──────────────────────────────────────────────
+    const fireConfetti = useCallback(() => {
+        setShowConfetti(true);
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#14b8a6'];
+        const particles = Array.from({ length: 150 }, () => ({
+            x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 16,
+            vy: Math.random() * -18 - 4,
+            size: Math.random() * 8 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 12,
+            gravity: 0.3 + Math.random() * 0.2,
+            opacity: 1,
+            shape: Math.random() > 0.5 ? 'rect' : 'circle',
+        }));
+
+        let frame = 0;
+        const maxFrames = 120;
+
+        const animate = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.vy += p.gravity;
+                p.y += p.vy;
+                p.rotation += p.rotationSpeed;
+                p.opacity = Math.max(0, 1 - frame / maxFrames);
+                if (p.opacity > 0) alive = true;
+
+                ctx.save();
+                ctx.globalAlpha = p.opacity;
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                if (p.shape === 'rect') {
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+            frame++;
+            if (alive && frame < maxFrames) {
+                requestAnimationFrame(animate);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                setShowConfetti(false);
+            }
+        };
+        requestAnimationFrame(animate);
+    }, []);
 
     useEffect(() => {
         if (user) {
@@ -53,7 +118,7 @@ function CertificatesContent() {
         setGenerating(prev => ({ ...prev, [courseId]: true }));
         try {
             await certificateAPI.generate(courseId);
-            alert('Certificate generated successfully!');
+            fireConfetti();
             await fetchData(); // Refresh data
         } catch (error) {
             alert(error.response?.data?.message || 'Failed to generate certificate');
@@ -93,6 +158,8 @@ function CertificatesContent() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950 pb-24 md:pb-0">
+            {/* Confetti Canvas */}
+            {showConfetti && <canvas ref={canvasRef} className="confetti-canvas" />}
             {/* Navigation */}
             <DashboardNav
                 brand={{ name: 'AS ACADEMY', href: '/student/dashboard' }}
@@ -109,8 +176,18 @@ function CertificatesContent() {
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">My Certificates</h2>
 
                     {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+                                    <div className="skeleton h-40" style={{ borderRadius: 0 }}></div>
+                                    <div className="p-6 space-y-3">
+                                        <div className="skeleton h-5 w-3/4"></div>
+                                        <div className="skeleton h-4 w-1/2"></div>
+                                        <div className="skeleton h-3 w-2/3"></div>
+                                        <div className="skeleton h-10 w-full rounded-lg"></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : certificates.length > 0 ? (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

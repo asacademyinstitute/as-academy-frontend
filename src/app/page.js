@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,6 +82,231 @@ function RankerCard({ ranker, index }) {
                 </div>
             </div>
         </motion.div>
+    );
+}
+
+// ── Animated Counter Hook ──────────────────────────────────────────────────
+function useCountUp(end, duration = 2000) {
+    const [count, setCount] = useState(0);
+    const [hasStarted, setHasStarted] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && !hasStarted) {
+                    setHasStarted(true);
+                }
+            },
+            { threshold: 0.3 }
+        );
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, [hasStarted]);
+
+    useEffect(() => {
+        if (!hasStarted) return;
+        let startTime = null;
+        const step = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            // Ease-out cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * end));
+            if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }, [hasStarted, end, duration]);
+
+    return { count, ref };
+}
+
+function StatCard({ icon, value, suffix, label, color, delay }) {
+    const { count, ref } = useCountUp(value, 2200);
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay }}
+            viewport={{ once: true }}
+            className="relative group"
+        >
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl p-6 md:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700/50 text-center">
+                <div className={`w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center stat-icon-pulse`}>
+                    {icon}
+                </div>
+                <div className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+                    {count}{suffix}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</div>
+            </div>
+        </motion.div>
+    );
+}
+
+function StatsSection() {
+    const stats = [
+        {
+            icon: <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>,
+            value: 1200, suffix: '+', label: 'Active Students', color: 'from-blue-500 to-indigo-600', delay: 0,
+        },
+        {
+            icon: <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+            value: 50, suffix: '+', label: 'Expert Courses', color: 'from-purple-500 to-pink-600', delay: 0.1,
+        },
+        {
+            icon: <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            value: 98, suffix: '%', label: 'Success Rate', color: 'from-emerald-500 to-teal-600', delay: 0.2,
+        },
+        {
+            icon: <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+            value: 24, suffix: '/7', label: 'Always Available', color: 'from-amber-500 to-orange-600', delay: 0.3,
+        },
+    ];
+
+    return (
+        <section className="max-w-7xl mx-auto container-padding py-8 md:py-16">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {stats.map((stat, i) => (
+                    <StatCard key={i} {...stat} />
+                ))}
+            </div>
+        </section>
+    );
+}
+
+// ── Testimonials Data ──────────────────────────────────────────────────────
+const TESTIMONIALS = [
+    {
+        name: 'Arjun Patel',
+        course: 'Diploma in Computer Engineering',
+        rating: 5,
+        text: 'AS Academy ne meri preparation bilkul change kar di. Video lectures itne clear hain ki ek baar mein samajh aa jata hai!',
+        avatar: 'AP',
+        gradient: 'from-blue-500 to-indigo-600',
+    },
+    {
+        name: 'Priya Sharma',
+        course: 'BTech - Data Structures',
+        rating: 5,
+        text: 'Best platform for MSBTE students! Question papers aur solutions sab ek jagah mil jaate hain. Highly recommended!',
+        avatar: 'PS',
+        gradient: 'from-purple-500 to-pink-600',
+    },
+    {
+        name: 'Rahul Deshmukh',
+        course: 'BCA - Web Development',
+        rating: 5,
+        text: 'Affordable courses with premium content. Saad bhai ka teaching style bahut acha hai, concepts clear ho jaate hain.',
+        avatar: 'RD',
+        gradient: 'from-emerald-500 to-teal-600',
+    },
+    {
+        name: 'Sneha Joshi',
+        course: 'Diploma - Sem 3',
+        rating: 4,
+        text: 'PDF notes aur video lectures dono ka combination perfect hai. Exam time mein bahut help hua. Thank you AS Academy!',
+        avatar: 'SJ',
+        gradient: 'from-amber-500 to-orange-600',
+    },
+    {
+        name: 'Mohit Khan',
+        course: 'MCA - Advanced Java',
+        rating: 5,
+        text: 'Professional level teaching at student-friendly prices. Certificate bhi milta hai. Best investment for my career!',
+        avatar: 'MK',
+        gradient: 'from-rose-500 to-red-600',
+    },
+];
+
+function TestimonialsCarousel() {
+    const [current, setCurrent] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrent(prev => (prev + 1) % TESTIMONIALS.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const t = TESTIMONIALS[current];
+
+    return (
+        <section className="max-w-7xl mx-auto container-padding py-12 md:py-20">
+            <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center mb-10 md:mb-14"
+            >
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-sm font-semibold mb-4">
+                    💬 Student Reviews
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                    What Our Students Say
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
+                    Real experiences from our community of learners
+                </p>
+            </motion.div>
+
+            <div className="relative max-w-3xl mx-auto">
+                {/* Glassmorphic card */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={current}
+                        initial={{ opacity: 0, x: 60, scale: 0.96 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -60, scale: 0.96 }}
+                        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                        className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-xl border border-white/20 dark:border-gray-700/40 rounded-3xl p-8 md:p-10 shadow-xl"
+                    >
+                        {/* Stars */}
+                        <div className="flex gap-1 mb-4 justify-center">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <svg key={i} className={`w-5 h-5 ${i < t.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                            ))}
+                        </div>
+
+                        {/* Quote */}
+                        <p className="text-lg md:text-xl text-gray-700 dark:text-gray-200 text-center leading-relaxed mb-6 italic">
+                            &ldquo;{t.text}&rdquo;
+                        </p>
+
+                        {/* Author */}
+                        <div className="flex items-center justify-center gap-3">
+                            <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.gradient} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
+                                {t.avatar}
+                            </div>
+                            <div className="text-left">
+                                <p className="font-semibold text-gray-900 dark:text-white">{t.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{t.course}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
+
+                {/* Navigation Dots */}
+                <div className="flex justify-center gap-2 mt-6">
+                    {TESTIMONIALS.map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setCurrent(i)}
+                            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                i === current
+                                    ? 'bg-indigo-500 w-8'
+                                    : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                            }`}
+                            aria-label={`Go to testimonial ${i + 1}`}
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -331,6 +556,9 @@ export default function HomePage() {
                 </div>
             </section>
 
+            {/* ── Animated Stats Counter ────────────────────────────── */}
+            <StatsSection />
+
             {/* ── Top Rankers Section ────────────────────────────────── */}
             {showRankers && (
                 <section className="max-w-7xl mx-auto container-padding section-spacing">
@@ -413,6 +641,9 @@ export default function HomePage() {
                     </motion.div>
                 </div>
             </section>
+
+            {/* ── Testimonials Carousel ─────────────────────────────── */}
+            <TestimonialsCarousel />
 
             {/* CTA Section */}
             <section className="gradient-blue-purple py-12 md:py-16">

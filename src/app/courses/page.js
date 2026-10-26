@@ -14,6 +14,20 @@ import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
 const CATEGORIES = ['All', 'Diploma', 'BTech', 'BCA', 'MCA', 'Coding'];
 const SEMESTERS = ['All', 'Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7', 'Sem 8'];
 
+// Category gradient map for placeholder thumbnails
+const CATEGORY_GRADIENTS = {
+    diploma: 'from-blue-500 via-indigo-500 to-purple-600',
+    btech: 'from-emerald-500 via-teal-500 to-cyan-600',
+    bca: 'from-orange-500 via-amber-500 to-yellow-600',
+    mca: 'from-rose-500 via-pink-500 to-fuchsia-600',
+    coding: 'from-violet-500 via-purple-500 to-indigo-600',
+    default: 'from-blue-500 via-indigo-500 to-purple-600',
+};
+
+const CATEGORY_ICONS = {
+    diploma: '🎓', btech: '⚙️', bca: '💻', mca: '🧠', coding: '🚀', default: '📚',
+};
+
 // Map short semester name to full stored value and vice versa
 const SEM_MAP = {
     'Sem 1': 'Semester 1', 'Sem 2': 'Semester 2', 'Sem 3': 'Semester 3', 'Sem 4': 'Semester 4',
@@ -201,8 +215,22 @@ export default function CoursesPage() {
             {/* ── Course Grid ── */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {loading ? (
-                    <div className="flex justify-center items-center py-24">
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+                    /* Shimmer Skeleton Loader */
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="bg-white rounded-2xl shadow overflow-hidden">
+                                <div className="skeleton w-full aspect-video" style={{ borderRadius: 0 }}></div>
+                                <div className="p-5 space-y-3">
+                                    <div className="skeleton h-5 w-3/4"></div>
+                                    <div className="skeleton h-4 w-full"></div>
+                                    <div className="skeleton h-4 w-2/3"></div>
+                                    <div className="flex justify-between items-center pt-2">
+                                        <div className="skeleton h-6 w-20"></div>
+                                        <div className="skeleton h-5 w-16 rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filteredCourses.length === 0 ? (
                     <div className="text-center py-24">
@@ -226,33 +254,45 @@ export default function CoursesPage() {
                                         initial={{ opacity: 0, y: 16 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ delay: index * 0.04 }}>
+                                        transition={{ delay: index * 0.04 }}
+                                        className="card-3d">
                                         <Link href={`/courses/${course.id}`}>
-                                            <div className="bg-white rounded-2xl shadow hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer">
-                                                {/* Thumbnail */}
-                                                <div className="relative w-full aspect-video bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center overflow-hidden">
+                                            <div className="card-3d-inner bg-white rounded-2xl shadow hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer">
+                                                {/* Thumbnail with category gradient */}
+                                                <div className={`relative w-full aspect-video bg-gradient-to-br ${CATEGORY_GRADIENTS[(course.category || '').toLowerCase()] || CATEGORY_GRADIENTS.default} flex items-center justify-center overflow-hidden`}>
                                                     {(course.thumbnail_url || course.thumbnail) ? (
                                                         <img
                                                             src={course.thumbnail_url || course.thumbnail}
                                                             alt={course.title}
-                                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                             onError={(e) => { e.target.style.display = 'none'; }}
                                                         />
                                                     ) : (
-                                                        <span className="text-6xl">📚</span>
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <span className="text-5xl drop-shadow-lg">{CATEGORY_ICONS[(course.category || '').toLowerCase()] || CATEGORY_ICONS.default}</span>
+                                                            <span className="text-white/70 text-xs font-medium tracking-wider uppercase">{course.category || 'Course'}</span>
+                                                        </div>
                                                     )}
+                                                    {/* Gradient overlay for depth */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                                                     {/* Badges */}
                                                     <div className="absolute top-3 left-3 flex gap-1.5 z-10">
                                                         {course.category && (
-                                                            <span className="bg-white/90 backdrop-blur text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                                                            <span className="bg-white/90 backdrop-blur text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
                                                                 {course.category}
                                                             </span>
                                                         )}
                                                         {course.semester && (
-                                                            <span className="bg-white/90 backdrop-blur text-purple-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                                                            <span className="bg-white/90 backdrop-blur text-purple-700 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm">
                                                                 {course.semester}
                                                             </span>
                                                         )}
+                                                    </div>
+                                                    {/* Price badge on thumbnail */}
+                                                    <div className="absolute bottom-3 right-3 z-10">
+                                                        <span className="bg-white/95 backdrop-blur text-blue-700 text-sm font-extrabold px-3 py-1 rounded-lg shadow-md">
+                                                            {formatCurrency(course.price)}
+                                                        </span>
                                                     </div>
                                                 </div>
 
