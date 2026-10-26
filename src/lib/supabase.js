@@ -4,10 +4,15 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase URL or Anon Key is missing in environment variables.');
+    if (typeof window !== 'undefined') {
+        console.warn('Supabase URL or Anon Key is missing in environment variables.');
+    }
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+// Fallback to placeholder during build / SSG prerendering so createClient does not throw
+export const supabase = (supabaseUrl && supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : createClient('https://placeholder.supabase.co', 'placeholder-anon-key');
 
 /**
  * Uploads a file to Supabase Storage and returns its public URL.

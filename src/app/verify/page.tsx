@@ -1,14 +1,7 @@
 import { redirect } from 'next/navigation';
 
-export default function VerifyShortRedirect({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
-    // If id or cert query params are passed, forward them to /verify-certificate
-    return (
-        <RedirectHandler searchParamsPromise={searchParams} />
-    );
-}
-
-async function RedirectHandler({ searchParamsPromise }: { searchParamsPromise: Promise<{ [key: string]: string | undefined }> }) {
-    const params = await searchParamsPromise;
+export default async function VerifyShortPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+    const params = await searchParams;
     const id = params?.id || params?.cert || params?.number;
     if (id) {
         redirect(`/verify-certificate?id=${encodeURIComponent(id)}`);
