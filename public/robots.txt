@@ -1,20 +1,23 @@
 User-agent: *
 Allow: /
 
-# Disallow admin pages
-Disallow: /admin/
-Disallow: /teacher/
-Disallow: /student/
-
-# Disallow API routes
-Disallow: /api/
-
-# Allow all other pages
-Allow: /courses/
+# Explicitly allow course pages for Google and search crawlers
+Allow: /courses
+Allow: /courses/*
 Allow: /contact
 Allow: /help
 Allow: /terms
 Allow: /privacy
 
-# Sitemap
+# Disallow private user dashboards and admin pages
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /teacher/
+Disallow: /teacher/*
+Disallow: /student/
+Disallow: /student/*
+Disallow: /api/
+Disallow: /api/*
+
+# Dynamic Sitemap location
 Sitemap: https://asacademy.site/sitemap.xml

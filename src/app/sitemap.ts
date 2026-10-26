@@ -4,7 +4,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = 'https://asacademy.site';
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://as-academy-backend.onrender.com/api';
 
-    // 1. Static pages
+    // 1. Static Core Pages
     const staticPages: MetadataRoute.Sitemap = [
         {
             url: baseUrl,
@@ -56,41 +56,54 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
     ];
 
-    // 2. Fetch Dynamic Course Pages
+    // 2. Fetch All Active Dynamic Course Pages Automatically
     let coursePages: MetadataRoute.Sitemap = [];
     try {
         const response = await fetch(`${apiUrl}/courses?limit=1000`, {
-            next: { revalidate: 3600 } // Cache for 1 hour
+            next: { revalidate: 300 } // Auto-revalidate every 5 minutes for newly added courses
         });
+
         if (response.ok) {
             const result = await response.json();
-            const courses = result.data?.courses || [];
-            coursePages = courses.map((course: any) => ({
+            const rawCourses = result.data?.courses || result.data || [];
+            
+            // Filter only active courses (exclude drafts or soft-deleted)
+            const activeCourses = rawCourses.filter((course: any) => {
+                if (!course?.id) return false;
+                if (course.status && course.status !== 'active' && course.status !== 'published') {
+                    return false;
+                }
+                return true;
+            });
+
+            coursePages = activeCourses.map((course: any) => ({
                 url: `${baseUrl}/courses/${course.id}`,
                 lastModified: new Date(course.updated_at || course.created_at || new Date()),
-                changeFrequency: 'weekly',
-                priority: 0.8,
+                changeFrequency: 'daily',
+                priority: 0.9,
             }));
         }
     } catch (error) {
         console.error('Failed to fetch courses for sitemap:', error);
     }
 
-    // 3. Fetch Dynamic Database-driven SEO Pages
+    // 3. Fetch Dynamic Database-driven SEO landing Pages
     let seoPages: MetadataRoute.Sitemap = [];
     try {
         const response = await fetch(`${apiUrl}/seo/sitemap`, {
-            next: { revalidate: 3600 } // Cache for 1 hour
+            next: { revalidate: 300 }
         });
         if (response.ok) {
             const result = await response.json();
             const pages = result.data || [];
-            seoPages = pages.map((page: any) => ({
-                url: `${baseUrl}/${page.url_slug}`,
-                lastModified: new Date(page.updated_at || page.created_at || new Date()),
-                changeFrequency: 'weekly',
-                priority: 0.7,
-            }));
+            seoPages = pages
+                .filter((p: any) => p?.url_slug)
+                .map((page: any) => ({
+                    url: `${baseUrl}/${page.url_slug}`,
+                    lastModified: new Date(page.updated_at || page.created_at || new Date()),
+                    changeFrequency: 'weekly',
+                    priority: 0.7,
+                }));
         }
     } catch (error) {
         console.error('Failed to fetch SEO pages for sitemap:', error);
