@@ -491,6 +491,7 @@ export default function HomePage() {
     // B. Render Marketing Homepage for Desktop Mode
     const navItems = [
         { label: 'Courses', href: '/courses' },
+        { label: 'Verify Certificate', href: '/verify-certificate' },
         { label: 'Login', href: '/login' },
     ];
 
@@ -711,6 +712,12 @@ export default function HomePage() {
                             <h4 className="font-semibold mb-4">Platform</h4>
                             <ul className="space-y-2 text-gray-400">
                                 <li><Link href="/courses" className="hover:text-white transition-colors">Courses</Link></li>
+                                <li>
+                                    <Link href="/verify-certificate" className="hover:text-emerald-400 transition-colors flex items-center gap-1.5 text-emerald-400/90 font-medium">
+                                        <span>Verify Certificate</span>
+                                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded-full border border-emerald-500/30 font-bold">Official</span>
+                                    </Link>
+                                </li>
                                 <li><Link href="/login" className="hover:text-white transition-colors">Login</Link></li>
                                 <li><Link href="/signup" className="hover:text-white transition-colors">Sign Up</Link></li>
                             </ul>
