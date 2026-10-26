@@ -4,8 +4,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 
 export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
     const canvasRef = useRef(null);
+    const canvasWrapperRef = useRef(null);
     const containerRef = useRef(null);
     const scrollContainerRef = useRef(null);
+    const zoomBadgeRef = useRef(null);
 
     const [pdf, setPdf] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -19,30 +21,43 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
     const [hasZoomed, setHasZoomed] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    // Dynamic ref tracking to avoid stale closures in event listeners
+    const scaleRef = useRef(scale);
+    scaleRef.current = scale;
+
+    const fitScaleRef = useRef(fitScale);
+    fitScaleRef.current = fitScale;
+
+    const totalPagesRef = useRef(totalPages);
+    totalPagesRef.current = totalPages;
+
+    const currentPageRef = useRef(currentPage);
+    currentPageRef.current = currentPage;
+
     // Interactive UI states
     const [pageInput, setPageInput] = useState('');
     const [showPageInput, setShowPageInput] = useState(false);
     const [pageTurnFeedback, setPageTurnFeedback] = useState(null); // 'next' | 'prev' | null
     const [showHint, setShowHint] = useState(true);
 
-    // Visual transform during active pinch gesture (for 60fps buttery zoom without lagging canvas render)
-    const [gestureTransform, setGestureTransform] = useState({ scale: 1, originX: 50, originY: 50 });
-    const isPinchingRef = useRef(false);
-
     // Drag-to-pan state (mouse on desktop)
     const isDraggingRef = useRef(false);
     const dragStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
     const [isGrabbing, setIsGrabbing] = useState(false);
 
-    // Touch gesture tracking
-    const touchStateRef = useRef({
+    // High-performance touch gesture tracking
+    const touchRef = useRef({
+        isPinching: false,
+        isPanning: false,
+        startDist: 0,
+        startScale: 1,
+        currentRatio: 1,
         startX: 0,
         startY: 0,
+        startScrollLeft: 0,
+        startScrollTop: 0,
         startTime: 0,
         lastTapTime: 0,
-        initialDist: 0,
-        startScale: 1,
-        isSwiping: false,
     });
 
     // ─── 1. Load PDF Document ──────────────────────────────────────────────────
@@ -112,8 +127,8 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
             try {
                 const page = await pdf.getPage(currentPage);
                 const unscaledViewport = page.getViewport({ scale: 1.0 });
-                const containerWidth = containerRef.current.clientWidth - 16; // accounting for padding
-                const targetWidth = Math.max(300, containerWidth);
+                const containerWidth = containerRef.current.clientWidth - 16;
+                const targetWidth = Math.max(280, containerWidth);
                 const calculated = Number((targetWidth / unscaledViewport.width).toFixed(2));
                 setFitScale(calculated);
                 setScale(calculated);
@@ -213,10 +228,9 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
     const triggerPageChange = useCallback((direction) => {
         if (direction === 'next') {
             setCurrentPage((prev) => {
-                if (prev < totalPages) {
+                if (prev < totalPagesRef.current) {
                     setPageTurnFeedback('next');
-                    setTimeout(() => setPageTurnFeedback(null), 300);
-                    // Reset scroll to top
+                    setTimeout(() => setPageTurnFeedback(null), 350);
                     if (scrollContainerRef.current) {
                         scrollContainerRef.current.scrollTop = 0;
                         scrollContainerRef.current.scrollLeft = 0;
@@ -229,8 +243,7 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
             setCurrentPage((prev) => {
                 if (prev > 1) {
                     setPageTurnFeedback('prev');
-                    setTimeout(() => setPageTurnFeedback(null), 300);
-                    // Reset scroll to top
+                    setTimeout(() => setPageTurnFeedback(null), 350);
                     if (scrollContainerRef.current) {
                         scrollContainerRef.current.scrollTop = 0;
                         scrollContainerRef.current.scrollLeft = 0;
@@ -240,26 +253,22 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                 return prev;
             });
         }
-    }, [totalPages]);
+    }, []);
 
     // ─── 6. Keyboard Shortcuts Navigation ──────────────────────────────────────
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // Block Ctrl+P (Print)
             if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
                 e.preventDefault();
                 return false;
             }
-            // Block Ctrl+S (Save)
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 return false;
             }
 
-            // If user is typing in page jump input, don't hijack keys
             if (e.target.tagName === 'INPUT') return;
 
-            // Page navigation keys
             if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'n' || e.key === 'N') {
                 e.preventDefault();
                 triggerPageChange('next');
@@ -281,15 +290,15 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
             } else if (e.key === '0') {
                 e.preventDefault();
                 setHasZoomed(false);
-                setScale(fitScale);
+                setScale(fitScaleRef.current);
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [triggerPageChange, fitScale]);
+    }, [triggerPageChange]);
 
-    // ─── 7. Fullscreen Change Listener ─────────────────────────────────────────
+    // ─── 7. Fullscreen Toggle ──────────────────────────────────────────────────
     useEffect(() => {
         const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
         document.addEventListener('fullscreenchange', handleFsChange);
@@ -335,7 +344,6 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
         const el = scrollContainerRef.current;
         if (!el) return;
 
-        // Only pan if content overflows container
         if (el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight) {
             isDraggingRef.current = true;
             setIsGrabbing(true);
@@ -362,129 +370,158 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
         setIsGrabbing(false);
     };
 
-    // ─── 10. Touch Gestures: Pinch-to-Zoom + Swipe Navigation + Double-Tap ─────
+    // ─── 10. MOBILE TOUCH ENGINE (Pinch Zoom + Pan + Swipe Navigation) ─────────
     useEffect(() => {
         const el = scrollContainerRef.current;
         if (!el) return;
 
-        const getDistance = (touch1, touch2) => {
-            const dx = touch1.clientX - touch2.clientX;
-            const dy = touch1.clientY - touch2.clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        };
-
-        const getMidpoint = (touch1, touch2, rect) => {
-            const x = ((touch1.clientX + touch2.clientX) / 2 - rect.left) / rect.width * 100;
-            const y = ((touch1.clientY + touch2.clientY) / 2 - rect.top) / rect.height * 100;
-            return { x, y };
-        };
-
         const handleTouchStart = (e) => {
-            const touch = touchStateRef.current;
+            const t = touchRef.current;
 
             if (e.touches.length === 2) {
-                // Multi-touch: Start Pinch
-                isPinchingRef.current = true;
-                touch.initialDist = getDistance(e.touches[0], e.touches[1]);
-                touch.startScale = scale;
-                touch.isSwiping = false;
+                // Multi-touch: 2 fingers -> Pinch to zoom!
+                // Calling preventDefault on touchstart blocks browser native viewport zoom
+                e.preventDefault();
+                t.isPinching = true;
+                t.isPanning = false;
 
-                const rect = el.getBoundingClientRect();
-                const mid = getMidpoint(e.touches[0], e.touches[1], rect);
-                setGestureTransform({ scale: 1, originX: mid.x, originY: mid.y });
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                t.startDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                t.startScale = scaleRef.current;
+                t.currentRatio = 1;
+
+                if (canvasWrapperRef.current) {
+                    canvasWrapperRef.current.style.transition = 'none';
+                }
             } else if (e.touches.length === 1) {
-                // Single touch: Track for Swipe or Double-Tap
-                isPinchingRef.current = false;
-                touch.startX = e.touches[0].clientX;
-                touch.startY = e.touches[0].clientY;
-                touch.startTime = Date.now();
-                touch.isSwiping = true;
+                // Single touch: Track for 1-finger pan or swipe
+                t.isPinching = false;
+                t.isPanning = true;
 
-                // Double-Tap detection (< 300ms between taps)
+                const touch = e.touches[0];
+                t.startX = touch.clientX;
+                t.startY = touch.clientY;
+                t.startScrollLeft = el.scrollLeft;
+                t.startScrollTop = el.scrollTop;
+                t.startTime = Date.now();
+
+                // Double tap detection (< 300ms)
                 const now = Date.now();
-                if (now - touch.lastTapTime < 300) {
-                    // Double tap detected!
-                    if (scale > fitScale * 1.15) {
-                        // Reset to fit
+                if (now - t.lastTapTime < 300) {
+                    e.preventDefault();
+                    const current = scaleRef.current;
+                    const fit = fitScaleRef.current;
+                    if (current > fit * 1.15) {
                         setHasZoomed(false);
-                        setScale(fitScale);
+                        setScale(fit);
                     } else {
-                        // Zoom in to 1.8x
                         setHasZoomed(true);
-                        setScale(Number((fitScale * 1.8).toFixed(2)));
+                        setScale(Number((fit * 1.8).toFixed(2)));
                     }
-                    touch.lastTapTime = 0;
-                    touch.isSwiping = false;
+                    t.lastTapTime = 0;
+                    t.isPanning = false;
                 } else {
-                    touch.lastTapTime = now;
+                    t.lastTapTime = now;
                 }
             }
         };
 
         const handleTouchMove = (e) => {
-            if (e.touches.length === 2 && isPinchingRef.current) {
-                // Prevent browser zoom, update CSS transform for 60fps buttery preview
-                e.preventDefault();
-                const touch = touchStateRef.current;
-                const newDist = getDistance(e.touches[0], e.touches[1]);
-                const ratio = newDist / (touch.initialDist || 1);
+            const t = touchRef.current;
 
-                setGestureTransform(prev => ({
-                    ...prev,
-                    scale: Math.min(3.5, Math.max(0.6, ratio))
-                }));
+            if (e.touches.length === 2 && t.isPinching) {
+                // Pinching in/out: Prevent browser scroll/zoom
+                e.preventDefault();
+
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+
+                if (t.startDist > 0) {
+                    const ratio = currentDist / t.startDist;
+                    t.currentRatio = ratio;
+
+                    // Direct hardware-accelerated CSS transform (120 FPS buttery smooth)
+                    if (canvasWrapperRef.current) {
+                        canvasWrapperRef.current.style.transform = `scale(${ratio})`;
+                    }
+
+                    // Update live percentage badge
+                    const liveScale = Math.min(4.0, Math.max(0.4, t.startScale * ratio));
+                    if (zoomBadgeRef.current) {
+                        zoomBadgeRef.current.textContent = `${Math.round(liveScale * 100)}%`;
+                    }
+                }
+            } else if (e.touches.length === 1 && t.isPanning) {
+                const touch = e.touches[0];
+                const dx = touch.clientX - t.startX;
+                const dy = touch.clientY - t.startY;
+
+                // When user is zoomed in, allow dragging around smoothly
+                if (scaleRef.current > fitScaleRef.current * 1.05 || el.scrollWidth > el.clientWidth + 10) {
+                    el.scrollLeft = t.startScrollLeft - dx;
+                    el.scrollTop = t.startScrollTop - dy;
+                    e.preventDefault();
+                }
             }
         };
 
         const handleTouchEnd = (e) => {
-            const touch = touchStateRef.current;
+            const t = touchRef.current;
 
-            // Commit pinch zoom when 2-finger gesture ends
-            if (isPinchingRef.current && e.touches.length < 2) {
-                isPinchingRef.current = false;
-                setGestureTransform(prev => {
-                    const finalRatio = prev.scale;
-                    if (Math.abs(finalRatio - 1) > 0.05) {
-                        const newScale = Number((touch.startScale * finalRatio).toFixed(2));
-                        const boundedScale = Math.min(4.0, Math.max(0.5, newScale));
-                        setScale(boundedScale);
-                        setHasZoomed(true);
+            // Pinch ended: commit new scale
+            if (t.isPinching && e.touches.length < 2) {
+                t.isPinching = false;
+                const finalRatio = t.currentRatio;
+                t.currentRatio = 1;
+
+                if (canvasWrapperRef.current) {
+                    canvasWrapperRef.current.style.transition = 'transform 0.15s ease-out';
+                    canvasWrapperRef.current.style.transform = 'scale(1)';
+                }
+
+                if (Math.abs(finalRatio - 1) > 0.04) {
+                    const newScale = Number((t.startScale * finalRatio).toFixed(2));
+                    const boundedScale = Math.min(4.0, Math.max(0.5, newScale));
+                    setHasZoomed(true);
+                    setScale(boundedScale);
+                } else {
+                    if (zoomBadgeRef.current) {
+                        zoomBadgeRef.current.textContent = `${Math.round(scaleRef.current * 100)}%`;
                     }
-                    return { scale: 1, originX: 50, originY: 50 };
-                });
+                }
             }
 
-            // Handle horizontal swipe navigation
-            if (touch.isSwiping && e.changedTouches.length === 1) {
-                const endTouch = e.changedTouches[0];
-                const dx = endTouch.clientX - touch.startX;
-                const dy = endTouch.clientY - touch.startY;
-                const duration = Date.now() - touch.startTime;
+            // 1-Finger horizontal swipe for page turn
+            if (t.isPanning && e.changedTouches.length === 1 && !t.isPinching) {
+                t.isPanning = false;
+                const touch = e.changedTouches[0];
+                const dx = touch.clientX - t.startX;
+                const dy = touch.clientY - t.startY;
+                const duration = Date.now() - t.startTime;
 
-                // Check if gesture is primarily horizontal and swift (>45px, more X than Y)
-                const isHorizontal = Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && duration < 600;
+                const isHorizontal = Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && duration < 500;
 
                 if (isHorizontal) {
-                    const isAtLeftEdge = el.scrollLeft <= 12;
-                    const isAtRightEdge = el.scrollLeft + el.clientWidth >= el.scrollWidth - 12;
-                    const isNotZoomed = el.scrollWidth <= el.clientWidth + 20;
+                    const isAtLeftEdge = el.scrollLeft <= 15;
+                    const isAtRightEdge = el.scrollLeft + el.clientWidth >= el.scrollWidth - 15;
+                    const isNotZoomed = el.scrollWidth <= el.clientWidth + 25;
 
                     if (dx < 0 && (isAtRightEdge || isNotZoomed)) {
-                        // Swiped Left -> Go to Next Page
                         triggerPageChange('next');
                     } else if (dx > 0 && (isAtLeftEdge || isNotZoomed)) {
-                        // Swiped Right -> Go to Prev Page
                         triggerPageChange('prev');
                     }
                 }
-                touch.isSwiping = false;
             }
         };
 
-        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        // Attach touch listeners with passive: false to allow e.preventDefault()
+        el.addEventListener('touchstart', handleTouchStart, { passive: false });
         el.addEventListener('touchmove', handleTouchMove, { passive: false });
-        el.addEventListener('touchend', handleTouchEnd, { passive: true });
-        el.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+        el.addEventListener('touchend', handleTouchEnd, { passive: false });
+        el.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
         return () => {
             el.removeEventListener('touchstart', handleTouchStart);
@@ -492,7 +529,7 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
             el.removeEventListener('touchend', handleTouchEnd);
             el.removeEventListener('touchcancel', handleTouchEnd);
         };
-    }, [scale, fitScale, triggerPageChange]);
+    }, [triggerPageChange]);
 
     // ─── 11. Page Jump Direct Input ────────────────────────────────────────────
     const handlePageSubmit = (e) => {
@@ -614,18 +651,19 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                             setScale(s => Math.max(Number((s - 0.25).toFixed(2)), 0.5));
                             setHasZoomed(true);
                         }}
-                        title="Zoom out (Ctrl + scroll down)"
+                        title="Zoom out"
                         className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-bold transition shadow-xs"
                     >
                         −
                     </button>
 
                     <button
+                        ref={zoomBadgeRef}
                         onClick={() => {
                             setHasZoomed(false);
                             setScale(fitScale);
                         }}
-                        title="Reset to Fit Width (Double-tap)"
+                        title="Reset to Fit Width (or Double-tap on mobile)"
                         className="px-2 py-1 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition min-w-[50px] text-center border border-transparent hover:border-border"
                     >
                         {Math.round(scale * 100)}%
@@ -636,7 +674,7 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                             setScale(s => Math.min(Number((s + 0.25).toFixed(2)), 4.0));
                             setHasZoomed(true);
                         }}
-                        title="Zoom in (Ctrl + scroll up / Pinch)"
+                        title="Zoom in"
                         className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-bold transition shadow-xs"
                     >
                         +
@@ -667,9 +705,9 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
             {showHint && (
                 <div className="sm:hidden bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-blue-600/10 border-b border-blue-500/15 px-3 py-1 flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300">
                     <span className="flex items-center gap-1.5 font-medium">
-                        <span>👈 👉 Swipe to turn</span>
-                        <span>•</span>
                         <span>🤏 Pinch to zoom</span>
+                        <span>•</span>
+                        <span>👈 👉 Swipe to turn</span>
                     </span>
                     <button
                         onClick={() => setShowHint(false)}
@@ -681,53 +719,54 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                 </div>
             )}
 
-            {/* ── PDF Canvas Viewport Container ─────────────────────────────── */}
+            {/* ── PDF Canvas Viewport Container (with touchAction: none for mobile pinch) ── */}
             <div
                 ref={scrollContainerRef}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                className={`relative overflow-auto flex justify-center items-start w-full flex-1 transition-colors duration-150 ${
-                    isGrabbing ? 'cursor-grabbing select-none' : 'cursor-grab'
+                className={`relative overflow-auto flex justify-center items-start w-full flex-1 transition-colors duration-150 select-none ${
+                    isGrabbing ? 'cursor-grabbing' : (scale > fitScale ? 'cursor-grab' : 'cursor-default')
                 }`}
                 style={{
-                    maxHeight: isFullscreen ? 'calc(100vh - 110px)' : 'calc(100vh - 200px)',
-                    minHeight: '380px',
-                    touchAction: 'pan-x pan-y',
+                    maxHeight: isFullscreen ? 'calc(100vh - 110px)' : 'calc(100vh - 190px)',
+                    minHeight: '350px',
+                    touchAction: 'none', // MANDATORY for mobile 2-finger pinch zoom
+                    WebkitOverflowScrolling: 'touch',
                 }}
             >
                 {/* Visual Feedback on Swipe / Page Change */}
                 {pageTurnFeedback === 'next' && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3 py-2 rounded-2xl shadow-lg flex items-center gap-1.5 text-xs font-bold animate-pulse">
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-pulse">
                         Next Page ➔
                     </div>
                 )}
                 {pageTurnFeedback === 'prev' && (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3 py-2 rounded-2xl shadow-lg flex items-center gap-1.5 text-xs font-bold animate-pulse">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-pulse">
                         ⬅ Prev Page
                     </div>
                 )}
 
-                {/* Canvas Wrapper with Hardware-Accelerated Gesture Scale */}
+                {/* Canvas Wrapper (directly animated during pinch gesture for 120 FPS performance) */}
                 <div
+                    ref={canvasWrapperRef}
+                    className="p-2 sm:p-4 my-auto inline-block"
                     style={{
-                        transform: `scale(${gestureTransform.scale})`,
-                        transformOrigin: `${gestureTransform.originX}% ${gestureTransform.originY}%`,
-                        transition: isPinchingRef.current ? 'none' : 'transform 0.15s ease-out',
-                        display: 'inline-block',
+                        transformOrigin: 'center center',
+                        willChange: 'transform',
                     }}
-                    className="p-3 my-auto"
                 >
                     <canvas
                         ref={canvasRef}
                         onContextMenu={(e) => e.preventDefault()}
                         onDragStart={(e) => e.preventDefault()}
-                        className="bg-white dark:bg-gray-900 rounded-lg shadow-md block border border-border/60"
+                        className="bg-white dark:bg-gray-900 rounded-lg shadow-lg block border border-border/60"
                         style={{
                             userSelect: 'none',
                             WebkitUserSelect: 'none',
-                            pointerEvents: 'none', // Prevents image drag or selection
+                            pointerEvents: 'none',
+                            display: 'block',
                         }}
                     />
                 </div>
@@ -746,7 +785,7 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                     Previous
                 </button>
 
-                {/* Center Page Indicator Pill */}
+                {/* Center Page Indicator */}
                 <div className="text-center">
                     <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                         Page <span className="font-bold text-gray-900 dark:text-white">{currentPage}</span> of <span className="font-bold text-gray-900 dark:text-white">{totalPages}</span>
