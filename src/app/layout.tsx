@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import PushNotificationManager from "@/components/PushNotificationManager";
+import CommunityPopup from "@/components/CommunityPopup";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -70,6 +71,7 @@ export default function RootLayout({
           storageKey="as-academy-theme"
         >
           <PushNotificationManager />
+          <CommunityPopup />
           {children}
         </ThemeProvider>
       </body>
