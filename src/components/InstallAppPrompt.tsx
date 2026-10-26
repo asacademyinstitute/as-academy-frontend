@@ -52,9 +52,14 @@ export default function InstallAppPrompt() {
         const isStudentArea = pathname?.startsWith('/student');
         const justLoggedIn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('just_logged_in') === 'true';
 
+        const isDev = typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1'
+        );
+
         if (isStudentArea || justLoggedIn) {
             // Check if dismissed in this session
-            const dismissedRecently = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('as_app_dismissed_session');
+            const dismissedRecently = !isDev && typeof sessionStorage !== 'undefined' && sessionStorage.getItem('as_app_dismissed_session');
             
             if (!dismissedRecently) {
                 const timer = setTimeout(() => {
@@ -112,7 +117,10 @@ export default function InstallAppPrompt() {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div 
+            style={{ zIndex: 999998 }}
+            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
             {/* Modal Card */}
             <div 
                 className="relative w-full sm:max-w-md bg-white dark:bg-gray-900 border-t sm:border border-gray-100 dark:border-gray-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6 text-center animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-300"

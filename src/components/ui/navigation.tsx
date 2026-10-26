@@ -161,7 +161,18 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
                                     </motion.div>
                                 )}
 
-                                <div className="pt-2">
+                                <div className="pt-2 space-y-2">
+                                    <button
+                                        onClick={() => {
+                                            setMobileMenuOpen(false);
+                                            if (typeof window !== 'undefined') {
+                                                window.dispatchEvent(new CustomEvent('open-install-app-prompt'));
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md active:scale-95 transition"
+                                    >
+                                        <span>📲 Install AS Academy App</span>
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setMobileMenuOpen(false);
