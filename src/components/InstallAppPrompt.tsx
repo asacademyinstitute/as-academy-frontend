@@ -4,24 +4,43 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 
+// Global holder for early beforeinstallprompt event
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        (window as any).__deferredInstallPrompt = e;
+    });
+}
+
 export default function InstallAppPrompt() {
     const [isOpen, setIsOpen] = useState(false);
-    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(() => {
+        return typeof window !== 'undefined' ? (window as any).__deferredInstallPrompt : null;
+    });
     const [isIOS, setIsIOS] = useState(false);
     const [showIOSGuide, setShowIOSGuide] = useState(false);
+    const [installing, setInstalling] = useState(false);
     const pathname = usePathname();
     const { user } = useAuthStore();
 
     useEffect(() => {
+        // Register Service Worker early to ensure PWA installability criteria is fulfilled
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch((err) => {
+                console.error('ServiceWorker registration error:', err);
+            });
+        }
+
         // Listen for the PWA install event on Android / Chromium
         const handleBeforeInstallPrompt = (e: any) => {
             e.preventDefault();
+            (window as any).__deferredInstallPrompt = e;
             setDeferredPrompt(e);
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-        // Allow manual trigger from any button (e.g. Dashboard banner or Mobile drawer)
+        // Allow manual trigger from any button (Dashboard banner, Mobile drawer, etc.)
         const handleManualOpen = () => {
             setShowIOSGuide(false);
             setIsOpen(true);
@@ -58,7 +77,6 @@ export default function InstallAppPrompt() {
         );
 
         if (isStudentArea || justLoggedIn) {
-            // Check if dismissed in this session
             const dismissedRecently = !isDev && typeof sessionStorage !== 'undefined' && sessionStorage.getItem('as_app_dismissed_session');
             
             if (!dismissedRecently) {
@@ -91,25 +109,47 @@ export default function InstallAppPrompt() {
     };
 
     const handleInstallClick = async () => {
+        // iPhone Safari doesn't support native prompt API by Apple design
         if (isIOS) {
             setShowIOSGuide(true);
             return;
         }
 
-        if (deferredPrompt) {
+        setInstalling(true);
+
+        let promptEvent = deferredPrompt || (typeof window !== 'undefined' ? (window as any).__deferredInstallPrompt : null);
+
+        // If prompt not caught yet, wait briefly for browser event
+        if (!promptEvent) {
+            promptEvent = await new Promise((resolve) => {
+                const timeout = setTimeout(() => resolve(null), 1000);
+                const handler = (e: any) => {
+                    e.preventDefault();
+                    clearTimeout(timeout);
+                    window.removeEventListener('beforeinstallprompt', handler);
+                    resolve(e);
+                };
+                window.addEventListener('beforeinstallprompt', handler);
+            });
+        }
+
+        if (promptEvent) {
             try {
-                deferredPrompt.prompt();
-                const choiceResult = await deferredPrompt.userChoice;
-                if (choiceResult.outcome === 'accepted') {
+                await promptEvent.prompt();
+                const choiceResult = await promptEvent.userChoice;
+                if (choiceResult?.outcome === 'accepted') {
                     setIsOpen(false);
                 }
+                (window as any).__deferredInstallPrompt = null;
                 setDeferredPrompt(null);
             } catch (err) {
                 console.error('Install prompt error:', err);
-                setShowIOSGuide(true);
+            } finally {
+                setInstalling(false);
             }
         } else {
-            // Fallback guide if browser already consumed the prompt or in-app browser
+            setInstalling(false);
+            // If browser is already standalone or prompt is unavailable
             setShowIOSGuide(true);
         }
     };
@@ -119,7 +159,8 @@ export default function InstallAppPrompt() {
     return (
         <div 
             style={{ zIndex: 999998 }}
-            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={handleDismiss}
         >
             {/* Modal Card */}
             <div 
@@ -166,7 +207,7 @@ export default function InstallAppPrompt() {
 
                 {/* Subtitle */}
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-1.5 mb-4 leading-relaxed">
-                    Apne mobile par AS Academy install karein! Wahan se courses, lectures aur notes dekhna bahut <strong>fast aur aasaan</strong> hai.
+                    Apne mobile par AS Academy install karein! Fast lectures, notes aur offline-ready distraction-free learning.
                 </p>
 
                 {/* Feature Perks */}
@@ -188,19 +229,19 @@ export default function InstallAppPrompt() {
                     </div>
                 </div>
 
-                {/* Guide for iPhone Safari or Manual Browser installation */}
-                {showIOSGuide && (
+                {/* Guide shown only on iOS Safari because Apple blocks automatic install API */}
+                {showIOSGuide && isIOS && (
                     <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-4 text-left my-3 space-y-2.5 text-xs text-blue-900 dark:text-blue-200 animate-in fade-in duration-150">
                         <div className="font-bold flex items-center gap-1.5 text-sm text-blue-800 dark:text-blue-300">
-                            <span>📲</span> How to Install:
+                            <span>📲</span> iPhone Safari Me Kaise Install Karein:
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">1</span>
-                            <span>Browser me neeche ya upar <strong className="font-bold">Share (⎙ / ⬆)</strong> ya <strong className="font-bold">Menu (⋮)</strong> dabayein.</span>
+                            <span>Neeche <strong className="font-bold">Share Button (⎙ / ⬆)</strong> dabayein.</span>
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">2</span>
-                            <span>List me se <strong className="font-bold">"Add to Home Screen"</strong> (या "Install App") select karein.</span>
+                            <span>Scroll karke <strong className="font-bold">"Add to Home Screen"</strong> chunein.</span>
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">3</span>
@@ -213,17 +254,27 @@ export default function InstallAppPrompt() {
                 <div className="space-y-2 mt-4">
                     <button
                         onClick={handleInstallClick}
-                        className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 active:scale-98"
+                        disabled={installing}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200 active:scale-98 disabled:opacity-60 cursor-pointer"
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <span>{isIOS ? 'Show How to Install on iPhone' : (showIOSGuide ? 'Follow Steps Above ⬆' : 'Install Web App Now')}</span>
+                        {installing ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                <span>Opening Install Dialog...</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>{isIOS ? 'Show Steps for iPhone' : 'Direct Install App'}</span>
+                            </>
+                        )}
                     </button>
 
                     <button
                         onClick={handleDismiss}
-                        className="w-full py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                        className="w-full py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer"
                     >
                         Continue in Browser
                     </button>

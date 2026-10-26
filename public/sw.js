@@ -1,11 +1,36 @@
-// Service Worker for PWA Web Push Notifications
+// Service Worker for AS Academy PWA and Push Notifications
+
+// Lifecycle: Install & Activate immediately
+self.addEventListener('install', function(event) {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(self.clients.claim());
+});
+
+// Fetch handler required by Chromium for PWA installability criteria
+self.addEventListener('fetch', function(event) {
+    // Only handle GET requests for http/https schemes
+    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+        return;
+    }
+
+    event.respondWith(
+        fetch(event.request).catch(function() {
+            return caches.match(event.request);
+        })
+    );
+});
+
+// Push Notification Handler
 self.addEventListener('push', function(event) {
     if (event.data) {
         try {
             const payload = event.data.json();
             const options = {
                 body: payload.body || 'New update from AS Academy',
-                icon: '/logo.jpg', // Use logo
+                icon: '/icons/icon-192x192.png',
                 badge: '/favicon.ico',
                 data: payload.data || {},
                 vibrate: [100, 50, 100],
@@ -18,23 +43,21 @@ self.addEventListener('push', function(event) {
             );
         } catch (e) {
             console.error('Push data parse error:', e);
-            // Fallback plain text notification
             event.waitUntil(
                 self.registration.showNotification('AS Academy Alert', {
                     body: event.data.text(),
-                    icon: '/logo.jpg'
+                    icon: '/icons/icon-192x192.png'
                 })
             );
         }
     }
 });
 
+// Notification Click Handler
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
 
     const courseId = event.notification.data?.courseId;
-    const type = event.notification.data?.type;
-
     let targetUrl = '/';
     if (courseId) {
         targetUrl = `/courses/${courseId}`;
@@ -42,14 +65,12 @@ self.addEventListener('notificationclick', function(event) {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-            // If already open, focus it
             for (let i = 0; i < clientList.length; i++) {
                 const client = clientList[i];
                 if (client.url.includes(targetUrl) && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // Otherwise open a new tab/window
             if (clients.openWindow) {
                 return clients.openWindow(targetUrl);
             }
