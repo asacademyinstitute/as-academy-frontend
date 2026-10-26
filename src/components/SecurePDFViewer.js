@@ -1,78 +1,129 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+/* ───────────────────────────── Config ───────────────────────────── */
+const MIN_ZOOM = 0.5;          // zoom is relative to "fit width" (1 = 100% = fit)
+const MAX_ZOOM = 5;
+const DOUBLE_TAP_ZOOM = 2.5;
+const PAGE_PADDING = 8;        // px around the page
+const MAX_CANVAS_PIXELS = 16_000_000; // keeps iOS/Android canvas limits safe
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+/* ───────────────────────── Security watermark ─────────────────────────
+   Same look & logic as before. `k` = canvas pixels per CSS pixel, so the
+   watermark stays the same visual size on retina screens.               */
+function drawWatermark(ctx, width, height, text, k) {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.font = `bold ${30 * k}px Arial, sans-serif`;
+    ctx.fillStyle = '#222222';
+    ctx.textAlign = 'center';
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate(-30 * (Math.PI / 180));
+
+    const spacing = 680 * k;
+    const rows = Math.ceil(height / spacing) + 1;
+    const cols = Math.ceil(width / spacing) + 1;
+    for (let r = -rows; r <= rows; r++) {
+        for (let c = -cols; c <= cols; c++) {
+            ctx.fillText(text, c * spacing, r * spacing);
+        }
+    }
+    ctx.restore();
+}
+
+/* ───────────────────────────── Small UI bits ───────────────────────── */
+const PATHS = {
+    prev: 'M15 19l-7-7 7-7',
+    next: 'M9 5l7 7-7 7',
+    minus: 'M5 12h14',
+    plus: 'M12 5v14M5 12h14',
+    expand: 'M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5',
+    close: 'M6 18L18 6M6 6l12 12',
+};
+
+function Icon({ name, className = 'w-4 h-4' }) {
+    return (
+        <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4"
+             strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d={PATHS[name]} />
+        </svg>
+    );
+}
+
+function IconBtn({ title, onClick, disabled, className = '', children }) {
+    return (
+        <button
+            type="button"
+            title={title}
+            aria-label={title}
+            onClick={onClick}
+            disabled={disabled}
+            className={`w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition ${className}`}
+        >
+            {children}
+        </button>
+    );
+}
+
+/* ═════════════════════════════ Component ═════════════════════════════ */
 export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
+    const rootRef = useRef(null);
+    const scrollRef = useRef(null);
     const canvasRef = useRef(null);
-    const canvasWrapperRef = useRef(null);
-    const containerRef = useRef(null);
-    const scrollContainerRef = useRef(null);
-    const zoomBadgeRef = useRef(null);
+    const badgeRef = useRef(null);
 
     const [pdf, setPdf] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState('loading'); // loading | ready | error
     const [error, setError] = useState(null);
+    const [reloadKey, setReloadKey] = useState(0);
 
-    // Zoom & scale states
-    const [scale, setScale] = useState(1.0);
-    const [fitScale, setFitScale] = useState(1.0);
-    const [hasZoomed, setHasZoomed] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [totalPages, setTotalPages] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageInfo, setPageInfo] = useState(null);   // { page, w, h, num }
+    const [shownPage, setShownPage] = useState(0);    // page number currently painted on canvas
 
-    // Dynamic ref tracking to avoid stale closures in event listeners
-    const scaleRef = useRef(scale);
-    scaleRef.current = scale;
+    const [containerW, setContainerW] = useState(0);
+    const [zoom, setZoom] = useState(1);              // relative to fit-width
 
-    const fitScaleRef = useRef(fitScale);
-    fitScaleRef.current = fitScale;
-
-    const totalPagesRef = useRef(totalPages);
-    totalPagesRef.current = totalPages;
-
-    const currentPageRef = useRef(currentPage);
-    currentPageRef.current = currentPage;
-
-    // Interactive UI states
     const [pageInput, setPageInput] = useState('');
     const [showPageInput, setShowPageInput] = useState(false);
-    const [pageTurnFeedback, setPageTurnFeedback] = useState(null); // 'next' | 'prev' | null
     const [showHint, setShowHint] = useState(true);
-
-    // Drag-to-pan state (mouse on desktop)
-    const isDraggingRef = useRef(false);
-    const dragStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
     const [isGrabbing, setIsGrabbing] = useState(false);
+    const [nativeFs, setNativeFs] = useState(false);
+    const [pseudoFs, setPseudoFs] = useState(false);  // fallback for iOS Safari
+    const isFullscreen = nativeFs || pseudoFs;
 
-    // High-performance touch gesture tracking
-    const touchRef = useRef({
-        isPinching: false,
-        isPanning: false,
-        startDist: 0,
-        startScale: 1,
-        currentRatio: 1,
-        startX: 0,
-        startY: 0,
-        startScrollLeft: 0,
-        startScrollTop: 0,
-        startTime: 0,
-        lastTapTime: 0,
-    });
+    // Refs so event listeners never see stale values
+    const zoomRef = useRef(zoom);          zoomRef.current = zoom;
+    const pageRef = useRef(currentPage);   pageRef.current = currentPage;
+    const totalRef = useRef(totalPages);   totalRef.current = totalPages;
+    const anchorRef = useRef(null);        // keeps the point under the fingers fixed while zooming
+    const dragRef = useRef(null);
 
-    // ─── 1. Load PDF Document ──────────────────────────────────────────────────
+    // Watermark text (primitives as deps → no needless re-renders if parent recreates the object)
+    const email = watermarkData?.email;
+    const phone = watermarkData?.phone;
+    const rawMark = `${email || ''} | ${phone || ''}`.trim();
+    const watermarkText = !rawMark || rawMark === '|' ? '' : rawMark;
+
+    /* ─── 1. Load document ─────────────────────────────────────────── */
     useEffect(() => {
         if (!pdfUrl) return;
+        let cancelled = false;
+        let task = null;
 
-        let createdBlobUrl = null;
-
-        const loadPDF = async () => {
+        (async () => {
             try {
-                setLoading(true);
+                setStatus('loading');
                 setError(null);
+                setPdf(null);
+                setPageInfo(null);
+                setShownPage(0);
 
                 const pdfjsLib = await import('pdfjs-dist');
-
                 if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
                         'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -80,731 +131,583 @@ export default function SecurePDFViewer({ pdfUrl, watermarkData }) {
                     ).toString();
                 }
 
-                let targetUrl = pdfUrl;
+                const res = await fetch(pdfUrl);
+                if (!res.ok) throw new Error(`Failed to fetch PDF (${res.status}: ${res.statusText})`);
+                const data = await res.arrayBuffer();
+                if (cancelled) return;
 
-                if (!pdfUrl.startsWith('blob:')) {
-                    const response = await fetch(pdfUrl);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch PDF (${response.status}: ${response.statusText})`);
-                    }
-                    const blob = await response.blob();
-                    createdBlobUrl = URL.createObjectURL(blob);
-                    targetUrl = createdBlobUrl;
-                }
+                task = pdfjsLib.getDocument({ data, withCredentials: false });
+                const doc = await task.promise;
+                if (cancelled) return;
 
-                const loadingTask = pdfjsLib.getDocument({
-                    url: targetUrl,
-                    withCredentials: false
-                });
-
-                const pdfDoc = await loadingTask.promise;
-
-                setPdf(pdfDoc);
-                setTotalPages(pdfDoc.numPages);
+                setPdf(doc);
+                setTotalPages(doc.numPages);
                 setCurrentPage(1);
-                setLoading(false);
+                setZoom(1);
+                setStatus('ready');
             } catch (err) {
+                if (cancelled) return;
                 console.error('Error loading PDF:', err);
                 setError(err.message || 'Failed to load PDF');
-                setLoading(false);
+                setStatus('error');
             }
-        };
-
-        loadPDF();
+        })();
 
         return () => {
-            if (createdBlobUrl) {
-                URL.revokeObjectURL(createdBlobUrl);
-            }
+            cancelled = true;
+            task?.destroy?.();
         };
-    }, [pdfUrl]);
+    }, [pdfUrl, reloadKey]);
 
-    // ─── 2. Auto-Fit Page to Container Width ──────────────────────────────────
+    /* ─── 2. Load the current page object (+ warm the next one) ────── */
     useEffect(() => {
-        if (!pdf || !containerRef.current || hasZoomed) return;
+        if (!pdf) return;
+        let cancelled = false;
 
-        const calculateFitScale = async () => {
-            try {
-                const page = await pdf.getPage(currentPage);
-                const unscaledViewport = page.getViewport({ scale: 1.0 });
-                const containerWidth = containerRef.current.clientWidth - 16;
-                const targetWidth = Math.max(280, containerWidth);
-                const calculated = Number((targetWidth / unscaledViewport.width).toFixed(2));
-                setFitScale(calculated);
-                setScale(calculated);
-            } catch (err) {
-                console.error('Error auto-scaling PDF:', err);
-            }
-        };
+        pdf.getPage(currentPage)
+            .then((page) => {
+                if (cancelled) return;
+                const vp = page.getViewport({ scale: 1 });
+                setPageInfo({ page, w: vp.width, h: vp.height, num: currentPage });
+                if (currentPage < pdf.numPages) pdf.getPage(currentPage + 1).catch(() => {});
+            })
+            .catch((err) => { if (!cancelled) console.error('Error loading page:', err); });
 
-        calculateFitScale();
+        return () => { cancelled = true; };
+    }, [pdf, currentPage]);
 
-        const handleResize = () => {
-            if (!hasZoomed) calculateFitScale();
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [pdf, currentPage, hasZoomed]);
-
-    // ─── 3. Apply Security Watermark ──────────────────────────────────────────
-    const applyWatermark = useCallback((context, width, height) => {
-        if (!watermarkData) return;
-        const { email, phone } = watermarkData;
-        const watermarkText = `${email || ''} | ${phone || ''}`.trim();
-        if (!watermarkText || watermarkText === '|') return;
-
-        context.save();
-        context.globalAlpha = 0.22;
-        context.font = 'bold 30px Arial, sans-serif';
-        context.fillStyle = '#222222';
-        context.textAlign = 'center';
-
-        const angle = -30 * (Math.PI / 180);
-        context.translate(width / 2, height / 2);
-        context.rotate(angle);
-
-        const spacing = 680;
-        const rows = Math.ceil(height / spacing) + 1;
-        const cols = Math.ceil(width / spacing) + 1;
-
-        for (let r = -rows; r <= rows; r++) {
-            for (let c = -cols; c <= cols; c++) {
-                context.fillText(watermarkText, c * spacing, r * spacing);
-            }
-        }
-        context.restore();
-    }, [watermarkData]);
-
-    // ─── 4. Render Current Page onto Canvas ────────────────────────────────────
+    /* ─── 3. Track viewport width (rotation, fullscreen, resize) ───── */
     useEffect(() => {
-        if (!pdf || !canvasRef.current) return;
+        const el = scrollRef.current;
+        if (!el) return;
+        setContainerW(el.clientWidth);
+        const ro = new ResizeObserver(([entry]) => setContainerW(entry.contentRect.width));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
-        let renderTask = null;
-        let isCancelled = false;
+    // Derived sizes (CSS pixels). Canvas CSS size updates instantly on zoom;
+    // the sharp bitmap is re-rendered right after (see effect 4).
+    const fitScale = pageInfo && containerW
+        ? Math.max(0.1, (containerW - PAGE_PADDING * 2) / pageInfo.w)
+        : 1;
+    const cssW = pageInfo ? Math.round(pageInfo.w * fitScale * zoom) : 0;
+    const cssH = pageInfo ? Math.round(pageInfo.h * fitScale * zoom) : 0;
 
-        const renderPage = async () => {
+    /* ─── 4. Render page → offscreen canvas → swap (no flicker, retina-sharp) ── */
+    useEffect(() => {
+        if (!pageInfo || !cssW) return;
+        let cancelled = false;
+        let task = null;
+
+        const timer = setTimeout(async () => {
             try {
-                const page = await pdf.getPage(currentPage);
-                if (isCancelled) return;
+                const { page, w, h, num } = pageInfo;
+                const scale = cssW / w;
+                const dpr = Math.min(window.devicePixelRatio || 1, 3);
+                const k = Math.min(dpr, Math.sqrt(MAX_CANVAS_PIXELS / (cssW * (cssW * h / w))));
+                const viewport = page.getViewport({ scale: scale * k });
+
+                const off = document.createElement('canvas');
+                off.width = Math.floor(viewport.width);
+                off.height = Math.floor(viewport.height);
+                const ctx = off.getContext('2d');
+
+                task = page.render({ canvasContext: ctx, viewport });
+                await task.promise;
+                if (cancelled) return;
+
+                if (watermarkText) drawWatermark(ctx, off.width, off.height, watermarkText, k);
 
                 const canvas = canvasRef.current;
                 if (!canvas) return;
-
-                const context = canvas.getContext('2d');
-                const viewport = page.getViewport({ scale });
-
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                renderTask = page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                });
-
-                await renderTask.promise;
-
-                if (!isCancelled) {
-                    applyWatermark(context, canvas.width, canvas.height);
-                }
+                canvas.width = off.width;
+                canvas.height = off.height;
+                canvas.getContext('2d').drawImage(off, 0, 0);
+                off.width = off.height = 0; // free memory (Safari)
+                setShownPage(num);
             } catch (err) {
-                if (err?.name !== 'RenderingCancelledException') {
-                    console.error('Error rendering PDF page:', err);
-                }
+                if (err?.name !== 'RenderingCancelledException') console.error('Error rendering PDF page:', err);
             }
-        };
-
-        renderPage();
+        }, 90); // debounce while zooming
 
         return () => {
-            isCancelled = true;
-            if (renderTask) {
-                renderTask.cancel();
-            }
+            cancelled = true;
+            clearTimeout(timer);
+            task?.cancel();
         };
-    }, [pdf, currentPage, scale, applyWatermark]);
+    }, [pageInfo, cssW, watermarkText]);
 
-    // ─── 5. Navigation Triggers with Visual Animation Feedback ─────────────────
-    const triggerPageChange = useCallback((direction) => {
-        if (direction === 'next') {
-            setCurrentPage((prev) => {
-                if (prev < totalPagesRef.current) {
-                    setPageTurnFeedback('next');
-                    setTimeout(() => setPageTurnFeedback(null), 350);
-                    if (scrollContainerRef.current) {
-                        scrollContainerRef.current.scrollTop = 0;
-                        scrollContainerRef.current.scrollLeft = 0;
-                    }
-                    return prev + 1;
-                }
-                return prev;
-            });
-        } else if (direction === 'prev') {
-            setCurrentPage((prev) => {
-                if (prev > 1) {
-                    setPageTurnFeedback('prev');
-                    setTimeout(() => setPageTurnFeedback(null), 350);
-                    if (scrollContainerRef.current) {
-                        scrollContainerRef.current.scrollTop = 0;
-                        scrollContainerRef.current.scrollLeft = 0;
-                    }
-                    return prev - 1;
-                }
-                return prev;
-            });
-        }
+    /* ─── 5. Navigation ────────────────────────────────────────────── */
+    const goTo = useCallback((p) => {
+        const n = clamp(p, 1, totalRef.current || 1);
+        if (n !== pageRef.current) setCurrentPage(n);
     }, []);
 
-    // ─── 6. Keyboard Shortcuts Navigation ──────────────────────────────────────
+    // New page → start from the top-left
+    useLayoutEffect(() => {
+        const el = scrollRef.current;
+        if (el) { el.scrollTop = 0; el.scrollLeft = 0; }
+    }, [currentPage]);
+
+    /* ─── 6. Zoom engine (keeps the focal point fixed) ─────────────── */
+    const applyZoom = useCallback((target, opts = {}) => {
+        const el = scrollRef.current;
+        const canvas = canvasRef.current;
+        if (!el || !canvas) return;
+
+        const next = clamp(Math.abs(target - 1) < 0.06 ? 1 : target, MIN_ZOOM, MAX_ZOOM); // snap to fit
+        const prev = zoomRef.current;
+        if (Math.abs(next - prev) < 0.001) return;
+
+        const box = el.getBoundingClientRect();
+        const sx = opts.sx ?? box.left + box.width / 2;
+        const sy = opts.sy ?? box.top + box.height / 2;
+        let lx = opts.lx;
+        let ly = opts.ly;
+        if (lx == null) {
+            const r = canvas.getBoundingClientRect();
+            lx = sx - r.left;
+            ly = sy - r.top;
+        }
+        const f = next / prev;
+        anchorRef.current = { x: lx * f, y: ly * f, sx, sy };
+        zoomRef.current = next;
+        setZoom(next);
+    }, []);
+
+    // After the new size is in the DOM, scroll so the focal point stays under the fingers/cursor
+    useLayoutEffect(() => {
+        const a = anchorRef.current;
+        if (!a) return;
+        anchorRef.current = null;
+        const el = scrollRef.current;
+        const canvas = canvasRef.current;
+        if (!el || !canvas) return;
+        const r = canvas.getBoundingClientRect();
+        el.scrollLeft += r.left + a.x - a.sx;
+        el.scrollTop += r.top + a.y - a.sy;
+    }, [zoom]);
+
+    const zoomIn = () => applyZoom(zoomRef.current * 1.25);
+    const zoomOut = () => applyZoom(zoomRef.current / 1.25);
+    const zoomFit = () => applyZoom(1);
+
+    /* ─── 7. Keyboard (print/save blocking kept as before) ─────────── */
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) {
-                e.preventDefault();
-                return false;
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-                e.preventDefault();
-                return false;
-            }
+        const onKey = (e) => {
+            const mod = e.ctrlKey || e.metaKey;
+            const k = e.key;
 
-            if (e.target.tagName === 'INPUT') return;
+            if (mod && (k === 'p' || k === 'P' || k === 's' || k === 'S')) {
+                e.preventDefault();
+                return;
+            }
+            if (e.target?.tagName === 'INPUT' || mod || e.altKey) return;
 
-            if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === 'n' || e.key === 'N') {
-                e.preventDefault();
-                triggerPageChange('next');
-            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'p' || e.key === 'P') {
-                e.preventDefault();
-                triggerPageChange('prev');
-            } else if (e.key === '+' || e.key === '=') {
-                e.preventDefault();
-                setScale(s => {
-                    setHasZoomed(true);
-                    return Math.min(Number((s + 0.25).toFixed(2)), 4.0);
-                });
-            } else if (e.key === '-' || e.key === '_') {
-                e.preventDefault();
-                setScale(s => {
-                    setHasZoomed(true);
-                    return Math.max(Number((s - 0.25).toFixed(2)), 0.5);
-                });
-            } else if (e.key === '0') {
-                e.preventDefault();
-                setHasZoomed(false);
-                setScale(fitScaleRef.current);
+            if (k === 'ArrowRight' || k === 'PageDown' || k === 'n' || k === 'N') {
+                e.preventDefault(); goTo(pageRef.current + 1);
+            } else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'p' || k === 'P') {
+                e.preventDefault(); goTo(pageRef.current - 1);
+            } else if (k === 'Home') {
+                e.preventDefault(); goTo(1);
+            } else if (k === 'End') {
+                e.preventDefault(); goTo(totalRef.current);
+            } else if (k === '+' || k === '=') {
+                e.preventDefault(); applyZoom(zoomRef.current * 1.25);
+            } else if (k === '-' || k === '_') {
+                e.preventDefault(); applyZoom(zoomRef.current / 1.25);
+            } else if (k === '0') {
+                e.preventDefault(); applyZoom(1);
+            } else if (k === 'Escape') {
+                setPseudoFs(false);
             }
         };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [goTo, applyZoom]);
 
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [triggerPageChange]);
-
-    // ─── 7. Fullscreen Toggle ──────────────────────────────────────────────────
+    /* ─── 8. Fullscreen (native + CSS fallback for iPhone) ─────────── */
     useEffect(() => {
-        const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-        document.addEventListener('fullscreenchange', handleFsChange);
-        return () => document.removeEventListener('fullscreenchange', handleFsChange);
+        const onChange = () => setNativeFs(document.fullscreenElement === rootRef.current);
+        document.addEventListener('fullscreenchange', onChange);
+        return () => document.removeEventListener('fullscreenchange', onChange);
     }, []);
 
     const toggleFullscreen = async () => {
-        if (!containerRef.current) return;
+        const root = rootRef.current;
+        if (!root) return;
         try {
-            if (!document.fullscreenElement) {
-                await containerRef.current.requestFullscreen();
-            } else {
-                await document.exitFullscreen();
-            }
-        } catch (err) {
-            console.error('Fullscreen toggle error:', err);
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else if (pseudoFs) setPseudoFs(false);
+            else if (root.requestFullscreen) await root.requestFullscreen();
+            else setPseudoFs(true);
+        } catch {
+            setPseudoFs((v) => !v);
         }
     };
 
-    // ─── 8. Mouse Wheel Zoom (Ctrl + Wheel) ────────────────────────────────────
+    /* ─── 9. Ctrl/⌘ + wheel and trackpad pinch (zooms at the cursor) ─ */
     useEffect(() => {
-        const el = scrollContainerRef.current;
+        const el = scrollRef.current;
+        if (!el) return;
+        let raf = 0, factor = 1, sx = 0, sy = 0;
+
+        const flush = () => {
+            raf = 0;
+            const f = factor; factor = 1;
+            applyZoom(zoomRef.current * f, { sx, sy });
+        };
+        const onWheel = (e) => {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            e.preventDefault();
+            factor *= Math.exp(-clamp(e.deltaY, -60, 60) * 0.006);
+            sx = e.clientX; sy = e.clientY;
+            if (!raf) raf = requestAnimationFrame(flush);
+        };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => {
+            el.removeEventListener('wheel', onWheel);
+            if (raf) cancelAnimationFrame(raf);
+        };
+    }, [applyZoom]);
+
+    /* ─── 10. Touch gestures ───────────────────────────────────────────
+       • 1 finger          → native scroll/pan (smooth, with momentum)
+       • 2 fingers         → pinch zoom around the fingers (GPU transform while pinching)
+       • double-tap        → zoom in at the tap / back to fit
+       • swipe left/right  → next / previous page (only when not zoomed in)   */
+    useEffect(() => {
+        const el = scrollRef.current;
         if (!el) return;
 
-        const handleWheel = (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -0.15 : 0.15;
-                setScale(prev => {
-                    const next = Math.min(4.0, Math.max(0.5, prev + delta));
-                    setHasZoomed(true);
-                    return Number(next.toFixed(2));
-                });
+        const g = { pinch: null, multi: false, x: 0, y: 0, t: 0, lastTap: { t: 0, x: 0, y: 0 } };
+        const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+        const mid = (a, b) => ({ x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 });
+        const setBadge = (z) => {
+            const node = badgeRef.current?.firstChild;
+            if (node) node.nodeValue = `${Math.round(z * 100)}%`;
+        };
+
+        const onStart = (e) => {
+            if (e.touches.length === 2) {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                g.multi = true;
+                const [a, b] = e.touches;
+                const m = mid(a, b);
+                const r = canvas.getBoundingClientRect();
+                g.pinch = {
+                    d: dist(a, b), z: zoomRef.current,
+                    sx: m.x, sy: m.y, mx: m.x, my: m.y,
+                    lx: m.x - r.left, ly: m.y - r.top, ratio: 1,
+                };
+                el.style.overflow = 'hidden'; // freeze native scroll while pinching
+                canvas.style.transition = 'none';
+                canvas.style.willChange = 'transform';
+                canvas.style.transformOrigin = `${g.pinch.lx}px ${g.pinch.ly}px`;
+            } else if (e.touches.length === 1) {
+                g.multi = false;
+                g.x = e.touches[0].clientX;
+                g.y = e.touches[0].clientY;
+                g.t = Date.now();
             }
         };
 
-        el.addEventListener('wheel', handleWheel, { passive: false });
-        return () => el.removeEventListener('wheel', handleWheel);
-    }, []);
+        const onMove = (e) => {
+            const p = g.pinch;
+            if (!p || e.touches.length < 2) return;
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const [a, b] = e.touches;
+            const m = mid(a, b);
+            const target = clamp((p.z * dist(a, b)) / p.d, MIN_ZOOM * 0.8, MAX_ZOOM * 1.1);
+            p.ratio = target / p.z;
+            p.mx = m.x; p.my = m.y;
+            canvas.style.transform = `translate(${m.x - p.sx}px, ${m.y - p.sy}px) scale(${p.ratio})`;
+            setBadge(target);
+        };
 
-    // ─── 9. Desktop Mouse Drag to Pan ──────────────────────────────────────────
-    const handleMouseDown = (e) => {
-        const el = scrollContainerRef.current;
-        if (!el) return;
+        const onEnd = (e) => {
+            const p = g.pinch;
+            if (p && e.touches.length < 2) {
+                g.pinch = null;
+                const canvas = canvasRef.current;
+                if (canvas) {
+                    canvas.style.transform = '';
+                    canvas.style.transformOrigin = '';
+                    canvas.style.willChange = '';
+                }
+                el.style.overflow = '';
+                setBadge(zoomRef.current);
+                applyZoom(p.z * p.ratio, { lx: p.lx, ly: p.ly, sx: p.mx, sy: p.my });
+            }
 
-        if (el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight) {
-            isDraggingRef.current = true;
-            setIsGrabbing(true);
-            dragStartRef.current = {
-                x: e.clientX,
-                y: e.clientY,
-                scrollLeft: el.scrollLeft,
-                scrollTop: el.scrollTop,
-            };
-        }
+            if (e.touches.length > 0) return;
+
+            const wasMulti = g.multi;
+            g.multi = false;
+            if (wasMulti || e.type === 'touchcancel') return;
+
+            const t = e.changedTouches[0];
+            if (!t) return;
+            const dx = t.clientX - g.x;
+            const dy = t.clientY - g.y;
+            const dt = Date.now() - g.t;
+
+            // Swipe to turn page (only if the page isn't wider than the screen)
+            const notZoomed = el.scrollWidth <= el.clientWidth + 2;
+            if (notZoomed && dt < 600 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                goTo(pageRef.current + (dx < 0 ? 1 : -1));
+                return;
+            }
+
+            // Double tap
+            if (Math.hypot(dx, dy) < 10 && dt < 250) {
+                const now = Date.now();
+                const lt = g.lastTap;
+                if (now - lt.t < 300 && Math.hypot(t.clientX - lt.x, t.clientY - lt.y) < 40) {
+                    g.lastTap = { t: 0, x: 0, y: 0 };
+                    applyZoom(zoomRef.current > 1.05 ? 1 : DOUBLE_TAP_ZOOM, { sx: t.clientX, sy: t.clientY });
+                } else {
+                    g.lastTap = { t: now, x: t.clientX, y: t.clientY };
+                }
+            }
+        };
+
+        // iOS Safari fires these for pinch; block its page-zoom
+        const blockGesture = (e) => e.preventDefault();
+
+        el.addEventListener('touchstart', onStart, { passive: true });
+        el.addEventListener('touchmove', onMove, { passive: true });
+        el.addEventListener('touchend', onEnd, { passive: true });
+        el.addEventListener('touchcancel', onEnd, { passive: true });
+        el.addEventListener('gesturestart', blockGesture);
+        el.addEventListener('gesturechange', blockGesture);
+
+        return () => {
+            el.removeEventListener('touchstart', onStart);
+            el.removeEventListener('touchmove', onMove);
+            el.removeEventListener('touchend', onEnd);
+            el.removeEventListener('touchcancel', onEnd);
+            el.removeEventListener('gesturestart', blockGesture);
+            el.removeEventListener('gesturechange', blockGesture);
+        };
+    }, [applyZoom, goTo]);
+
+    /* ─── 11. Desktop mouse drag-to-pan ────────────────────────────── */
+    const onPointerDown = (e) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        const el = scrollRef.current;
+        if (!el || (el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight)) return;
+        dragRef.current = { x: e.clientX, y: e.clientY, l: el.scrollLeft, t: el.scrollTop };
+        el.setPointerCapture(e.pointerId);
+        setIsGrabbing(true);
     };
-
-    const handleMouseMove = (e) => {
-        if (!isDraggingRef.current || !scrollContainerRef.current) return;
-        e.preventDefault();
-        const dx = e.clientX - dragStartRef.current.x;
-        const dy = e.clientY - dragStartRef.current.y;
-        scrollContainerRef.current.scrollLeft = dragStartRef.current.scrollLeft - dx;
-        scrollContainerRef.current.scrollTop = dragStartRef.current.scrollTop - dy;
+    const onPointerMove = (e) => {
+        const d = dragRef.current;
+        const el = scrollRef.current;
+        if (!d || !el) return;
+        el.scrollLeft = d.l - (e.clientX - d.x);
+        el.scrollTop = d.t - (e.clientY - d.y);
     };
-
-    const handleMouseUp = () => {
-        isDraggingRef.current = false;
+    const endDrag = () => {
+        dragRef.current = null;
         setIsGrabbing(false);
     };
 
-    // ─── 10. MOBILE TOUCH ENGINE (Pinch Zoom + Pan + Swipe Navigation) ─────────
-    useEffect(() => {
-        const el = scrollContainerRef.current;
-        if (!el) return;
-
-        const handleTouchStart = (e) => {
-            const t = touchRef.current;
-
-            if (e.touches.length === 2) {
-                // Multi-touch: 2 fingers -> Pinch to zoom!
-                // Calling preventDefault on touchstart blocks browser native viewport zoom
-                e.preventDefault();
-                t.isPinching = true;
-                t.isPanning = false;
-
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                t.startDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-                t.startScale = scaleRef.current;
-                t.currentRatio = 1;
-
-                if (canvasWrapperRef.current) {
-                    canvasWrapperRef.current.style.transition = 'none';
-                }
-            } else if (e.touches.length === 1) {
-                // Single touch: Track for 1-finger pan or swipe
-                t.isPinching = false;
-                t.isPanning = true;
-
-                const touch = e.touches[0];
-                t.startX = touch.clientX;
-                t.startY = touch.clientY;
-                t.startScrollLeft = el.scrollLeft;
-                t.startScrollTop = el.scrollTop;
-                t.startTime = Date.now();
-
-                // Double tap detection (< 300ms)
-                const now = Date.now();
-                if (now - t.lastTapTime < 300) {
-                    e.preventDefault();
-                    const current = scaleRef.current;
-                    const fit = fitScaleRef.current;
-                    if (current > fit * 1.15) {
-                        setHasZoomed(false);
-                        setScale(fit);
-                    } else {
-                        setHasZoomed(true);
-                        setScale(Number((fit * 1.8).toFixed(2)));
-                    }
-                    t.lastTapTime = 0;
-                    t.isPanning = false;
-                } else {
-                    t.lastTapTime = now;
-                }
-            }
-        };
-
-        const handleTouchMove = (e) => {
-            const t = touchRef.current;
-
-            if (e.touches.length === 2 && t.isPinching) {
-                // Pinching in/out: Prevent browser scroll/zoom
-                e.preventDefault();
-
-                const t1 = e.touches[0];
-                const t2 = e.touches[1];
-                const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-
-                if (t.startDist > 0) {
-                    const ratio = currentDist / t.startDist;
-                    t.currentRatio = ratio;
-
-                    // Direct hardware-accelerated CSS transform (120 FPS buttery smooth)
-                    if (canvasWrapperRef.current) {
-                        canvasWrapperRef.current.style.transform = `scale(${ratio})`;
-                    }
-
-                    // Update live percentage badge
-                    const liveScale = Math.min(4.0, Math.max(0.4, t.startScale * ratio));
-                    if (zoomBadgeRef.current) {
-                        zoomBadgeRef.current.textContent = `${Math.round(liveScale * 100)}%`;
-                    }
-                }
-            } else if (e.touches.length === 1 && t.isPanning) {
-                const touch = e.touches[0];
-                const dx = touch.clientX - t.startX;
-                const dy = touch.clientY - t.startY;
-
-                // When user is zoomed in, allow dragging around smoothly
-                if (scaleRef.current > fitScaleRef.current * 1.05 || el.scrollWidth > el.clientWidth + 10) {
-                    el.scrollLeft = t.startScrollLeft - dx;
-                    el.scrollTop = t.startScrollTop - dy;
-                    e.preventDefault();
-                }
-            }
-        };
-
-        const handleTouchEnd = (e) => {
-            const t = touchRef.current;
-
-            // Pinch ended: commit new scale
-            if (t.isPinching && e.touches.length < 2) {
-                t.isPinching = false;
-                const finalRatio = t.currentRatio;
-                t.currentRatio = 1;
-
-                if (canvasWrapperRef.current) {
-                    canvasWrapperRef.current.style.transition = 'transform 0.15s ease-out';
-                    canvasWrapperRef.current.style.transform = 'scale(1)';
-                }
-
-                if (Math.abs(finalRatio - 1) > 0.04) {
-                    const newScale = Number((t.startScale * finalRatio).toFixed(2));
-                    const boundedScale = Math.min(4.0, Math.max(0.5, newScale));
-                    setHasZoomed(true);
-                    setScale(boundedScale);
-                } else {
-                    if (zoomBadgeRef.current) {
-                        zoomBadgeRef.current.textContent = `${Math.round(scaleRef.current * 100)}%`;
-                    }
-                }
-            }
-
-            // 1-Finger horizontal swipe for page turn
-            if (t.isPanning && e.changedTouches.length === 1 && !t.isPinching) {
-                t.isPanning = false;
-                const touch = e.changedTouches[0];
-                const dx = touch.clientX - t.startX;
-                const dy = touch.clientY - t.startY;
-                const duration = Date.now() - t.startTime;
-
-                const isHorizontal = Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && duration < 500;
-
-                if (isHorizontal) {
-                    const isAtLeftEdge = el.scrollLeft <= 15;
-                    const isAtRightEdge = el.scrollLeft + el.clientWidth >= el.scrollWidth - 15;
-                    const isNotZoomed = el.scrollWidth <= el.clientWidth + 25;
-
-                    if (dx < 0 && (isAtRightEdge || isNotZoomed)) {
-                        triggerPageChange('next');
-                    } else if (dx > 0 && (isAtLeftEdge || isNotZoomed)) {
-                        triggerPageChange('prev');
-                    }
-                }
-            }
-        };
-
-        // Attach touch listeners with passive: false to allow e.preventDefault()
-        el.addEventListener('touchstart', handleTouchStart, { passive: false });
-        el.addEventListener('touchmove', handleTouchMove, { passive: false });
-        el.addEventListener('touchend', handleTouchEnd, { passive: false });
-        el.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-        return () => {
-            el.removeEventListener('touchstart', handleTouchStart);
-            el.removeEventListener('touchmove', handleTouchMove);
-            el.removeEventListener('touchend', handleTouchEnd);
-            el.removeEventListener('touchcancel', handleTouchEnd);
-        };
-    }, [triggerPageChange]);
-
-    // ─── 11. Page Jump Direct Input ────────────────────────────────────────────
-    const handlePageSubmit = (e) => {
+    /* ─── 12. Page jump input ──────────────────────────────────────── */
+    const submitPage = (e) => {
         e.preventDefault();
         const p = parseInt(pageInput, 10);
-        if (p >= 1 && p <= totalPages) {
-            setCurrentPage(p);
-            if (scrollContainerRef.current) {
-                scrollContainerRef.current.scrollTop = 0;
-                scrollContainerRef.current.scrollLeft = 0;
-            }
-        }
+        if (!Number.isNaN(p)) goTo(p);
         setShowPageInput(false);
         setPageInput('');
     };
 
-    // ─── Loading State ─────────────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[420px] bg-gray-50 dark:bg-gray-900 rounded-2xl border border-border">
-                <div className="text-center p-6">
-                    <div className="relative w-14 h-14 mx-auto mb-4">
-                        <div className="absolute inset-0 rounded-full border-4 border-blue-500/20 animate-ping"></div>
-                        <div className="w-14 h-14 rounded-full border-4 border-t-transparent border-blue-600 dark:border-blue-400 animate-spin"></div>
-                    </div>
-                    <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">Loading Protected PDF</h4>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Preparing secure viewing canvas...</p>
-                </div>
-            </div>
-        );
-    }
+    // Auto-hide the mobile hint
+    useEffect(() => {
+        if (!showHint) return;
+        const t = setTimeout(() => setShowHint(false), 6000);
+        return () => clearTimeout(t);
+    }, [showHint]);
 
-    // ─── Error State ───────────────────────────────────────────────────────────
-    if (error) {
-        return (
-            <div className="flex items-center justify-center min-h-[380px] bg-red-50/60 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl p-6">
-                <div className="text-center max-w-md">
-                    <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto mb-3 text-2xl font-bold">
-                        ⚠️
-                    </div>
-                    <h3 className="text-base font-bold text-red-800 dark:text-red-300 mb-1">Failed to Load PDF</h3>
-                    <p className="text-xs text-red-600 dark:text-red-400 mb-4">{error}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
-                    >
-                        Retry Loading
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const pageIsStale = shownPage !== currentPage;
+    const canPan = zoom > 1.02;
 
-    // ─── Main Viewer UI ────────────────────────────────────────────────────────
+    /* ═══════════════════════════ Render ═══════════════════════════ */
     return (
         <div
-            ref={containerRef}
-            className={`relative bg-gray-100 dark:bg-gray-950 border border-border rounded-2xl overflow-hidden shadow-sm flex flex-col select-none ${
-                isFullscreen ? 'fixed inset-0 z-50 rounded-none w-screen h-screen' : ''
+            ref={rootRef}
+            onContextMenu={(e) => e.preventDefault()}
+            className={`relative flex flex-col bg-gray-100 dark:bg-gray-950 border border-border overflow-hidden shadow-sm select-none ${
+                pseudoFs ? 'fixed inset-0 z-50 rounded-none' : 'rounded-2xl'
             }`}
-            style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+            style={{
+                height: isFullscreen ? '100dvh' : 'clamp(420px, 82dvh, 960px)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+            }}
         >
-            {/* ── Top Header Toolbar ────────────────────────────────────────── */}
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-border px-3.5 py-2.5 flex items-center justify-between gap-2 z-20">
+            {/* ── Top toolbar ───────────────────────────────────────── */}
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-border z-20">
+                {showPageInput ? (
+                    <form onSubmit={submitPage} className="flex items-center gap-1.5">
+                        <input
+                            autoFocus
+                            type="number"
+                            inputMode="numeric"
+                            min={1}
+                            max={totalPages}
+                            value={pageInput}
+                            onChange={(e) => setPageInput(e.target.value)}
+                            onFocus={(e) => e.target.select()}
+                            onBlur={() => { setShowPageInput(false); setPageInput(''); }}
+                            placeholder={String(currentPage)}
+                            className="w-16 h-9 text-center text-sm font-bold border-2 border-blue-500 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                        />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">/ {totalPages}</span>
+                    </form>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={() => { setShowPageInput(true); setPageInput(String(currentPage)); }}
+                        title="Tap to jump to a page"
+                        className="h-9 px-3 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    >
+                        Page <span className="font-bold text-blue-600 dark:text-blue-400">{currentPage}</span> / {totalPages || '–'}
+                    </button>
+                )}
 
-                {/* Left: Page Navigation with Quick Jump */}
                 <div className="flex items-center gap-1.5">
+                    <IconBtn title="Zoom out" onClick={zoomOut} disabled={zoom <= MIN_ZOOM}><Icon name="minus" /></IconBtn>
                     <button
-                        onClick={() => triggerPageChange('prev')}
-                        disabled={currentPage === 1}
-                        title="Previous page (Swipe right or Left Arrow)"
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-200 shadow-xs"
+                        ref={badgeRef}
+                        type="button"
+                        onClick={zoomFit}
+                        title="Reset to fit width"
+                        className="h-9 min-w-[52px] px-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition tabular-nums"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-                        </svg>
+                        {`${Math.round(zoom * 100)}%`}
                     </button>
-
-                    {showPageInput ? (
-                        <form onSubmit={handlePageSubmit} className="inline-flex">
-                            <input
-                                autoFocus
-                                type="number"
-                                min={1}
-                                max={totalPages}
-                                value={pageInput}
-                                onChange={(e) => setPageInput(e.target.value)}
-                                onBlur={() => { setShowPageInput(false); setPageInput(''); }}
-                                placeholder={String(currentPage)}
-                                className="w-16 text-center text-xs font-bold border-2 border-blue-500 rounded-xl px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
-                            />
-                        </form>
-                    ) : (
-                        <button
-                            onClick={() => { setShowPageInput(true); setPageInput(String(currentPage)); }}
-                            title="Click to jump to page"
-                            className="px-2.5 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition min-w-[72px] text-center border border-transparent hover:border-border"
-                        >
-                            Page <span className="font-bold text-blue-600 dark:text-blue-400">{currentPage}</span> / {totalPages}
-                        </button>
-                    )}
-
-                    <button
-                        onClick={() => triggerPageChange('next')}
-                        disabled={currentPage === totalPages}
-                        title="Next page (Swipe left or Right Arrow)"
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition text-gray-700 dark:text-gray-200 shadow-xs"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Right: Zoom & Fullscreen Controls */}
-                <div className="flex items-center gap-1.5">
-                    <button
-                        onClick={() => {
-                            setScale(s => Math.max(Number((s - 0.25).toFixed(2)), 0.5));
-                            setHasZoomed(true);
-                        }}
-                        title="Zoom out"
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-bold transition shadow-xs"
-                    >
-                        −
-                    </button>
-
-                    <button
-                        ref={zoomBadgeRef}
-                        onClick={() => {
-                            setHasZoomed(false);
-                            setScale(fitScale);
-                        }}
-                        title="Reset to Fit Width (or Double-tap on mobile)"
-                        className="px-2 py-1 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition min-w-[50px] text-center border border-transparent hover:border-border"
-                    >
-                        {Math.round(scale * 100)}%
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            setScale(s => Math.min(Number((s + 0.25).toFixed(2)), 4.0));
-                            setHasZoomed(true);
-                        }}
-                        title="Zoom in"
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-bold transition shadow-xs"
-                    >
-                        +
-                    </button>
-
-                    <div className="h-5 w-[1px] bg-border mx-0.5"></div>
-
-                    {/* Fullscreen Button */}
-                    <button
+                    <IconBtn title="Zoom in" onClick={zoomIn} disabled={zoom >= MAX_ZOOM}><Icon name="plus" /></IconBtn>
+                    <IconBtn
+                        title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
                         onClick={toggleFullscreen}
-                        title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Mode'}
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition shadow-xs"
+                        className="!bg-blue-50 dark:!bg-blue-950/40 !text-blue-600 dark:!text-blue-400 ml-1"
                     >
-                        {isFullscreen ? (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                            </svg>
-                        )}
-                    </button>
+                        <Icon name={isFullscreen ? 'close' : 'expand'} />
+                    </IconBtn>
                 </div>
             </div>
 
-            {/* ── Mobile Gesture Helper Badge (Dismissible) ─────────────────── */}
-            {showHint && (
-                <div className="sm:hidden bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-blue-600/10 border-b border-blue-500/15 px-3 py-1 flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300">
-                    <span className="flex items-center gap-1.5 font-medium">
-                        <span>🤏 Pinch to zoom</span>
-                        <span>•</span>
-                        <span>👈 👉 Swipe to turn</span>
-                    </span>
-                    <button
-                        onClick={() => setShowHint(false)}
-                        className="text-blue-600/70 hover:text-blue-900 dark:hover:text-white px-1"
-                        title="Dismiss"
-                    >
-                        ✕
-                    </button>
+            {/* ── Mobile hint ───────────────────────────────────────── */}
+            {showHint && status === 'ready' && (
+                <div className="sm:hidden flex items-center justify-between px-3 py-1.5 text-[11px] font-medium bg-blue-600/10 border-b border-blue-500/15 text-blue-700 dark:text-blue-300">
+                    <span>Pinch or double-tap to zoom · Swipe to change page</span>
+                    <button type="button" onClick={() => setShowHint(false)} className="px-1" aria-label="Dismiss">✕</button>
                 </div>
             )}
 
-            {/* ── PDF Canvas Viewport Container (with touchAction: none for mobile pinch) ── */}
-            <div
-                ref={scrollContainerRef}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                className={`relative overflow-auto flex justify-center items-start w-full flex-1 transition-colors duration-150 select-none ${
-                    isGrabbing ? 'cursor-grabbing' : (scale > fitScale ? 'cursor-grab' : 'cursor-default')
-                }`}
-                style={{
-                    maxHeight: isFullscreen ? 'calc(100vh - 110px)' : 'calc(100vh - 190px)',
-                    minHeight: '350px',
-                    touchAction: 'none', // MANDATORY for mobile 2-finger pinch zoom
-                    WebkitOverflowScrolling: 'touch',
-                }}
-            >
-                {/* Visual Feedback on Swipe / Page Change */}
-                {pageTurnFeedback === 'next' && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-pulse">
-                        Next Page ➔
-                    </div>
-                )}
-                {pageTurnFeedback === 'prev' && (
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-30 pointer-events-none bg-blue-600 text-white px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-pulse">
-                        ⬅ Prev Page
-                    </div>
-                )}
-
-                {/* Canvas Wrapper (directly animated during pinch gesture for 120 FPS performance) */}
+            {/* ── Viewport ──────────────────────────────────────────── */}
+            <div className="relative flex-1 min-h-0">
                 <div
-                    ref={canvasWrapperRef}
-                    className="p-2 sm:p-4 my-auto inline-block"
+                    ref={scrollRef}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={endDrag}
+                    onPointerCancel={endDrag}
+                    className={`absolute inset-0 overflow-auto flex ${
+                        isGrabbing ? 'cursor-grabbing' : canPan ? 'cursor-grab' : 'cursor-default'
+                    }`}
                     style={{
-                        transformOrigin: 'center center',
-                        willChange: 'transform',
+                        touchAction: 'pan-x pan-y',      // native 1-finger scroll; pinch handled by us
+                        overscrollBehavior: 'contain',
+                        WebkitOverflowScrolling: 'touch',
                     }}
                 >
-                    <canvas
-                        ref={canvasRef}
-                        onContextMenu={(e) => e.preventDefault()}
-                        onDragStart={(e) => e.preventDefault()}
-                        className="bg-white dark:bg-gray-900 rounded-lg shadow-lg block border border-border/60"
-                        style={{
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none',
-                            pointerEvents: 'none',
-                            display: 'block',
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* ── Bottom Mobile / Tablet Friendly Floating Navigation Dock ──── */}
-            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-border px-4 py-2 flex items-center justify-between gap-3 z-20">
-                <button
-                    onClick={() => triggerPageChange('prev')}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition shadow-xs"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Previous
-                </button>
-
-                {/* Center Page Indicator */}
-                <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                        Page <span className="font-bold text-gray-900 dark:text-white">{currentPage}</span> of <span className="font-bold text-gray-900 dark:text-white">{totalPages}</span>
-                    </p>
+                    <div className="m-auto shrink-0" style={{ padding: PAGE_PADDING }}>
+                        <canvas
+                            ref={canvasRef}
+                            onContextMenu={(e) => e.preventDefault()}
+                            onDragStart={(e) => e.preventDefault()}
+                            className="block bg-white dark:bg-gray-900 rounded-lg shadow-lg"
+                            style={{
+                                width: cssW,
+                                height: cssH,
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                pointerEvents: 'none',
+                                opacity: pageIsStale ? 0.35 : 1,
+                                transition: 'opacity 120ms',
+                            }}
+                        />
+                    </div>
                 </div>
 
-                <button
-                    onClick={() => triggerPageChange('next')}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-xs font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition shadow-xs"
-                >
-                    Next
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </button>
+                {/* Small spinner while a new page is painting */}
+                {status === 'ready' && pageIsStale && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div className="w-9 h-9 rounded-full border-4 border-blue-600/25 border-t-blue-600 animate-spin" />
+                    </div>
+                )}
+
+                {/* Loading overlay */}
+                {status === 'loading' && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                        <div className="text-center p-6">
+                            <div className="w-12 h-12 mx-auto mb-4 rounded-full border-4 border-blue-600/25 border-t-blue-600 animate-spin" />
+                            <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">Loading document</h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Preparing secure viewer…</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Error overlay */}
+                {status === 'error' && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-red-50 dark:bg-gray-900 p-6">
+                        <div className="text-center max-w-sm">
+                            <h3 className="text-base font-bold text-red-800 dark:text-red-300 mb-1">Couldn’t load this PDF</h3>
+                            <p className="text-xs text-red-600 dark:text-red-400 mb-4 break-words">{error}</p>
+                            <button
+                                type="button"
+                                onClick={() => setReloadKey((k) => k + 1)}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition"
+                            >
+                                Try again
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* ── Security Footer ───────────────────────────────────────────── */}
+            {/* ── Bottom navigation: prev · slider · next ───────────── */}
+            <div className="flex items-center gap-3 px-3 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-border z-20">
+                <IconBtn title="Previous page" onClick={() => goTo(currentPage - 1)} disabled={currentPage <= 1}>
+                    <Icon name="prev" />
+                </IconBtn>
+                <input
+                    type="range"
+                    min={1}
+                    max={Math.max(totalPages, 1)}
+                    value={currentPage}
+                    disabled={totalPages <= 1}
+                    onChange={(e) => goTo(Number(e.target.value))}
+                    aria-label="Page"
+                    className="flex-1 h-9 accent-blue-600"
+                />
+                <IconBtn
+                    title="Next page"
+                    onClick={() => goTo(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="!bg-blue-600 !text-white hover:!bg-blue-700"
+                >
+                    <Icon name="next" />
+                </IconBtn>
+            </div>
+
+            {/* ── Security footer (unchanged) ───────────────────────── */}
             <div className="bg-amber-500/10 border-t border-amber-500/20 py-1 px-3 text-center">
                 <p className="text-[10px] text-amber-800 dark:text-amber-400 font-medium">
                     🔒 Protected Document • Download, printing, and sharing are restricted
