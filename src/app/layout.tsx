@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import PushNotificationManager from "@/components/PushNotificationManager";
 import CommunityPopup from "@/components/CommunityPopup";
+import InstallAppPrompt from "@/components/InstallAppPrompt";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default function RootLayout({
         >
           <PushNotificationManager />
           <CommunityPopup />
+          <InstallAppPrompt />
           {children}
         </ThemeProvider>
       </body>

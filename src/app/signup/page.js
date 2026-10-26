@@ -78,6 +78,7 @@ export default function SignupPage() {
         const result = await register(userData);
 
         if (result.success) {
+            try { sessionStorage.setItem('just_logged_in', 'true'); } catch (e) {}
             router.push('/student/dashboard');
         }
     };

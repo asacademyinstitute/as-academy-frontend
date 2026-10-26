@@ -66,6 +66,7 @@ export default function LoginPage() {
         if (result.success) {
             const user = useAuthStore.getState().user;
             if (user.role === 'student') {
+                try { sessionStorage.setItem('just_logged_in', 'true'); } catch (e) {}
                 router.push('/student/dashboard');
             } else if (user.role === 'teacher') {
                 router.push('/teacher/dashboard');
