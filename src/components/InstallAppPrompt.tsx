@@ -21,67 +21,72 @@ export default function InstallAppPrompt() {
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-        // Detect if already installed in standalone mode
+        // Allow manual trigger from any button (e.g. Dashboard banner or Mobile drawer)
+        const handleManualOpen = () => {
+            setShowIOSGuide(false);
+            setIsOpen(true);
+        };
+        window.addEventListener('open-install-app-prompt', handleManualOpen);
+
+        // Detect if already installed and running inside the standalone app
         const isStandalone = 
-            window.matchMedia('(display-mode: standalone)').matches || 
-            (window.navigator as any).standalone === true;
+            typeof window !== 'undefined' && (
+                window.matchMedia('(display-mode: standalone)').matches || 
+                (window.navigator as any).standalone === true ||
+                document.referrer.includes('android-app://')
+            );
 
         if (isStandalone) {
-            return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        }
-
-        // Check if on mobile device
-        const ua = navigator.userAgent || '';
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) || window.innerWidth < 768;
-        if (!isMobile) {
-            return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            return () => {
+                window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+                window.removeEventListener('open-install-app-prompt', handleManualOpen);
+            };
         }
 
         // Detect iOS
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
         const iosDevice = /iPhone|iPad|iPod/i.test(ua);
         setIsIOS(iosDevice);
 
-        // Check if the user is a student or currently on student routes
-        const isStudentArea = pathname?.startsWith('/student') || user?.role === 'student';
-        const justLoggedIn = sessionStorage.getItem('just_logged_in') === 'true';
+        // Check if user is on student routes or just logged in
+        const isStudentArea = pathname?.startsWith('/student');
+        const justLoggedIn = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('just_logged_in') === 'true';
 
-        // Only prompt students or users right after login/signup or in student dashboard
-        if (!isStudentArea && !justLoggedIn) {
-            return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        }
+        if (isStudentArea || justLoggedIn) {
+            // Check if dismissed in this session
+            const dismissedRecently = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('as_app_dismissed_session');
+            
+            if (!dismissedRecently) {
+                const timer = setTimeout(() => {
+                    setIsOpen(true);
+                    if (justLoggedIn) {
+                        sessionStorage.removeItem('just_logged_in');
+                    }
+                }, 1200);
 
-        // Check cooldown in localStorage (don't harass student on every refresh)
-        const lastDismissed = localStorage.getItem('as_app_install_dismissed');
-        if (lastDismissed && !justLoggedIn) {
-            const hoursPassed = (Date.now() - parseInt(lastDismissed, 10)) / (1000 * 60 * 60);
-            if (hoursPassed < 48) {
-                return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+                return () => {
+                    clearTimeout(timer);
+                    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+                    window.removeEventListener('open-install-app-prompt', handleManualOpen);
+                };
             }
         }
 
-        // Trigger prompt after a short delay (1.5s if just logged in, 3s otherwise)
-        const delay = justLoggedIn ? 1500 : 3000;
-        const timer = setTimeout(() => {
-            setIsOpen(true);
-            sessionStorage.removeItem('just_logged_in');
-        }, delay);
-
         return () => {
-            clearTimeout(timer);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('open-install-app-prompt', handleManualOpen);
         };
     }, [pathname, user]);
 
     const handleDismiss = () => {
         setIsOpen(false);
         try {
-            localStorage.setItem('as_app_install_dismissed', Date.now().toString());
+            sessionStorage.setItem('as_app_dismissed_session', 'true');
         } catch (e) {}
     };
 
     const handleInstallClick = async () => {
         if (isIOS) {
-            // Show step-by-step visual instruction for iPhone Safari users
             setShowIOSGuide(true);
             return;
         }
@@ -92,14 +97,14 @@ export default function InstallAppPrompt() {
                 const choiceResult = await deferredPrompt.userChoice;
                 if (choiceResult.outcome === 'accepted') {
                     setIsOpen(false);
-                    localStorage.setItem('as_app_install_dismissed', Date.now().toString());
                 }
                 setDeferredPrompt(null);
             } catch (err) {
                 console.error('Install prompt error:', err);
+                setShowIOSGuide(true);
             }
         } else {
-            // Fallback for browsers that already handled the prompt or in-app webviews
+            // Fallback guide if browser already consumed the prompt or in-app browser
             setShowIOSGuide(true);
         }
     };
@@ -108,7 +113,7 @@ export default function InstallAppPrompt() {
 
     return (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            {/* Bottom Sheet on Mobile / Centered Card on larger screens */}
+            {/* Modal Card */}
             <div 
                 className="relative w-full sm:max-w-md bg-white dark:bg-gray-900 border-t sm:border border-gray-100 dark:border-gray-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6 text-center animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
@@ -175,28 +180,28 @@ export default function InstallAppPrompt() {
                     </div>
                 </div>
 
-                {/* iOS / Manual Guide Modal (if on iPhone Safari or fallback) */}
-                {showIOSGuide ? (
+                {/* Guide for iPhone Safari or Manual Browser installation */}
+                {showIOSGuide && (
                     <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-4 text-left my-3 space-y-2.5 text-xs text-blue-900 dark:text-blue-200 animate-in fade-in duration-150">
                         <div className="font-bold flex items-center gap-1.5 text-sm text-blue-800 dark:text-blue-300">
-                            <span>📲</span> How to Install on your phone:
+                            <span>📲</span> How to Install:
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">1</span>
-                            <span>Browser me neeche ya upar <strong className="font-bold">Share (⎙ / ⬆)</strong> ya <strong className="font-bold">Menu (⋮)</strong> icon par click karein.</span>
+                            <span>Browser me neeche ya upar <strong className="font-bold">Share (⎙ / ⬆)</strong> ya <strong className="font-bold">Menu (⋮)</strong> dabayein.</span>
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">2</span>
-                            <span>Menu se <strong className="font-bold">"Add to Home Screen"</strong> (या "Install App") par tap karein.</span>
+                            <span>List me se <strong className="font-bold">"Add to Home Screen"</strong> (या "Install App") select karein.</span>
                         </div>
                         <div className="flex items-start gap-2.5">
                             <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">3</span>
                             <span>Top right par <strong className="font-bold">"Add"</strong> dabayein — App ready! 🎉</span>
                         </div>
                     </div>
-                ) : null}
+                )}
 
-                {/* Main Action Button */}
+                {/* Action Buttons */}
                 <div className="space-y-2 mt-4">
                     <button
                         onClick={handleInstallClick}
@@ -205,14 +210,14 @@ export default function InstallAppPrompt() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <span>{isIOS ? 'Show How to Install on iPhone' : 'Install Web App Now'}</span>
+                        <span>{isIOS ? 'Show How to Install on iPhone' : (showIOSGuide ? 'Follow Steps Above ⬆' : 'Install Web App Now')}</span>
                     </button>
 
                     <button
                         onClick={handleDismiss}
                         className="w-full py-2.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
                     >
-                        Continue in Browser (Maybe Later)
+                        Continue in Browser
                     </button>
                 </div>
             </div>

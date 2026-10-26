@@ -110,6 +110,35 @@ function StudentDashboardContent() {
 
             {/* Content */}
             <div className="max-w-7xl mx-auto container-padding py-6 md:py-8">
+                {/* Install Web App Banner */}
+                <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+                    <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-2xl shadow-xs">
+                            📲
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-sm sm:text-base font-bold">Install AS Academy Web App</h3>
+                                <span className="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Fast Access</span>
+                            </div>
+                            <p className="text-xs text-white/80 mt-0.5">Mobile par 1-tap fast access aur distraction-free fullscreen classes ke liye app install karein.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (typeof window !== 'undefined') {
+                                window.dispatchEvent(new CustomEvent('open-install-app-prompt'));
+                            }
+                        }}
+                        className="px-4 py-2.5 bg-white text-blue-600 hover:bg-blue-50 rounded-xl font-bold text-xs shadow-md active:scale-95 transition shrink-0 ml-auto sm:ml-0 flex items-center gap-1.5"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Install App</span>
+                    </button>
+                </div>
+
                 {/* Stats */}
                 {stats && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">

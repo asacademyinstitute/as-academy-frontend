@@ -8,8 +8,8 @@ export default function CommunityPopup() {
     const pathname = usePathname();
 
     useEffect(() => {
-        // Do not show popup on admin or teacher panels
-        if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher')) {
+        // Do not show popup on admin, teacher, or student panels
+        if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher') || pathname?.startsWith('/student')) {
             return;
         }
 
