@@ -37,8 +37,8 @@ export default function CourseSchema({
         "provider": {
             "@type": "Organization",
             "name": provider,
-            "sameAs": "https://asacademy.site",
-            "logo": "https://asacademy.site/icon.png"
+            "sameAs": "https://www.asacademy.site",
+            "logo": "https://www.asacademy.site/icon.png"
         },
         "url": url,
         ...(image && { "image": image }),
@@ -85,13 +85,13 @@ export default function CourseSchema({
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Home",
-                "item": "https://asacademy.site"
+                "item": "https://www.asacademy.site"
             },
             {
                 "@type": "ListItem",
                 "position": 2,
                 "name": "Courses",
-                "item": "https://asacademy.site/courses"
+                "item": "https://www.asacademy.site/courses"
             },
             {
                 "@type": "ListItem",

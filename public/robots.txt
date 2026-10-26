@@ -20,4 +20,4 @@ Disallow: /api/
 Disallow: /api/*
 
 # Dynamic Sitemap location
-Sitemap: https://asacademy.site/sitemap.xml
+Sitemap: https://www.asacademy.site/sitemap.xml

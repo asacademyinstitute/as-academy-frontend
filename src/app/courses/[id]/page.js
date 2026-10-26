@@ -20,7 +20,7 @@ async function getCourse(id) {
 export async function generateMetadata({ params }) {
     const { id } = await params;
     const course = await getCourse(id);
-    const baseUrl = 'https://asacademy.site';
+    const baseUrl = 'https://www.asacademy.site';
     const pageUrl = `${baseUrl}/courses/${id}`;
 
     if (!course) {
@@ -106,7 +106,7 @@ export async function generateMetadata({ params }) {
 export default async function CourseDetailPage({ params }) {
     const { id } = await params;
     const course = await getCourse(id);
-    const pageUrl = `https://asacademy.site/courses/${id}`;
+    const pageUrl = `https://www.asacademy.site/courses/${id}`;
 
     return (
         <>

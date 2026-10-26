@@ -2,8 +2,8 @@
 
 export const siteConfig = {
     name: 'AS Academy',
-    domain: 'asacademy.site',
-    url: 'https://asacademy.site',
+    domain: 'www.asacademy.site',
+    url: 'https://www.asacademy.site',
     description: 'Best online courses for JEE, NEET, and competitive exam preparation. Expert-led courses with certificates.',
     keywords: [
         'online courses India',
