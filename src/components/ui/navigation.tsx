@@ -160,6 +160,20 @@ export function ResponsiveNav({ brand, items, actions, className }: ResponsiveNa
                                         {actions}
                                     </motion.div>
                                 )}
+
+                                <div className="pt-2">
+                                    <button
+                                        onClick={() => {
+                                            setMobileMenuOpen(false);
+                                            if (typeof window !== 'undefined') {
+                                                window.dispatchEvent(new CustomEvent('open-community-popup'));
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-green-600 to-rose-600 text-white font-bold text-sm shadow-md active:scale-95 transition"
+                                    >
+                                        <span>💬 Join WhatsApp & Insta</span>
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </>

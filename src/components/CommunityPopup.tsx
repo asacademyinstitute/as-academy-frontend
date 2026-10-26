@@ -8,28 +8,49 @@ export default function CommunityPopup() {
     const pathname = usePathname();
 
     useEffect(() => {
+        // Clear any stuck lockout keys from previous legacy versions
+        if (typeof localStorage !== 'undefined') {
+            try {
+                localStorage.removeItem('as_community_popup_dismissed');
+            } catch (e) {}
+        }
+
         // Do not show on admin or teacher management panels
         if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher')) {
             return;
         }
 
-        // Allow manual trigger from anywhere
+        // Allow manual trigger from anywhere (e.g. Nav menu, Drawer, Banner)
         const handleManualOpen = () => setIsOpen(true);
         window.addEventListener('open-community-popup', handleManualOpen);
 
-        // Check if user dismissed it in this browser session
-        const dismissedInSession = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('as_community_popup_session_closed');
-        if (dismissedInSession) {
-            return () => window.removeEventListener('open-community-popup', handleManualOpen);
+        // Check cooldown: in development / localhost, always show for easy testing.
+        // In production, only delay if dismissed recently within the last 15 minutes.
+        const isDev = typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1'
+        );
+
+        let shouldAutoOpen = true;
+        if (!isDev && typeof sessionStorage !== 'undefined') {
+            const dismissedAt = sessionStorage.getItem('as_community_popup_dismissed_time');
+            if (dismissedAt) {
+                const diffMin = (Date.now() - parseInt(dismissedAt, 10)) / (1000 * 60);
+                if (diffMin < 15) {
+                    shouldAutoOpen = false;
+                }
+            }
         }
 
-        // Show popup after 1 second for a smooth and fast entrance
-        const timer = setTimeout(() => {
-            setIsOpen(true);
-        }, 1000);
+        let timer: NodeJS.Timeout | null = null;
+        if (shouldAutoOpen) {
+            timer = setTimeout(() => {
+                setIsOpen(true);
+            }, 800);
+        }
 
         return () => {
-            clearTimeout(timer);
+            if (timer) clearTimeout(timer);
             window.removeEventListener('open-community-popup', handleManualOpen);
         };
     }, [pathname]);
@@ -37,42 +58,55 @@ export default function CommunityPopup() {
     const handleDismiss = () => {
         setIsOpen(false);
         try {
-            sessionStorage.setItem('as_community_popup_session_closed', 'true');
+            sessionStorage.setItem('as_community_popup_dismissed_time', Date.now().toString());
         } catch (e) {}
     };
 
     const handleActionClick = () => {
         try {
-            sessionStorage.setItem('as_community_popup_session_closed', 'true');
+            sessionStorage.setItem('as_community_popup_dismissed_time', Date.now().toString());
         } catch (e) {}
     };
 
+    // Do not render on admin or teacher routes
+    if (pathname?.startsWith('/admin') || pathname?.startsWith('/teacher')) {
+        return null;
+    }
+
     return (
         <>
-            {/* ── Persistent Floating Quick-Access Pill (Bottom Left) ────────── */}
-            {!isOpen && !pathname?.startsWith('/admin') && !pathname?.startsWith('/teacher') && (
+            {/* ── Persistent Floating Pill (Bottom-Left) ─────────────────────────
+                Placed at bottom-24 on mobile so it sits safely above the mobile bottom nav bar (z-50).
+                On desktop, it sits at bottom-6 left-6. Always visible when modal is closed. */}
+            {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed bottom-5 left-5 z-40 flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-green-600 to-rose-600 text-white font-bold text-xs shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200 border border-white/20 animate-bounce duration-1000"
-                    title="Join WhatsApp Group & Instagram"
+                    style={{ zIndex: 99990 }}
+                    aria-label="Open Community WhatsApp and Instagram"
+                    className="fixed bottom-24 left-3.5 md:bottom-6 md:left-6 flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-gradient-to-r from-emerald-600 via-green-600 to-rose-600 text-white font-bold text-xs shadow-2xl hover:shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white/30 backdrop-blur-sm cursor-pointer"
                 >
-                    <span className="flex items-center -space-x-1">
-                        <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-white font-bold">💬</span>
-                        <span className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-[10px] text-white font-bold">📸</span>
+                    <span className="flex items-center -space-x-1 shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-[11px] text-white font-bold shadow-xs">💬</span>
+                        <span className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-[11px] text-white font-bold shadow-xs">📸</span>
                     </span>
-                    <span>Join WhatsApp & Insta</span>
+                    <span className="font-extrabold tracking-wide">WhatsApp & Insta</span>
+                    <span className="relative flex h-2 w-2 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-300"></span>
+                    </span>
                 </button>
             )}
 
-            {/* ── Main Modal Overlay ────────────────────────────────────────── */}
+            {/* ── Modal Overlay ──────────────────────────────────────────────── */}
             {isOpen && (
                 <div 
-                    className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/65 backdrop-blur-md animate-in fade-in duration-200"
+                    style={{ zIndex: 999999 }}
+                    className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md transition-opacity"
                     onClick={handleDismiss}
                 >
                     {/* Modal Card */}
                     <div 
-                        className="relative w-full max-w-md bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-7 text-center animate-in zoom-in-95 duration-200"
+                        className="relative w-full max-w-md bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-7 text-center transition-transform"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Close Button */}
@@ -168,7 +202,7 @@ export default function CommunityPopup() {
                         <div className="mt-4">
                             <button
                                 onClick={handleDismiss}
-                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors"
+                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium transition-colors cursor-pointer"
                             >
                                 Maybe later
                             </button>

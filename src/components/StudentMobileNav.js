@@ -87,6 +87,18 @@ export default function StudentMobileNav({ user, onLogout }) {
                                 </svg>
                                 <span>📲 Install Web App</span>
                             </button>
+                            <button
+                                onClick={() => {
+                                    setIsOpen(false);
+                                    if (typeof window !== 'undefined') {
+                                        window.dispatchEvent(new CustomEvent('open-community-popup'));
+                                    }
+                                }}
+                                className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl mb-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-bold text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition"
+                            >
+                                <span className="text-base">💬</span>
+                                <span>WhatsApp & Insta Community</span>
+                            </button>
                             {navLinks.map((link) => (
                                 <Link
                                     key={link.href}
