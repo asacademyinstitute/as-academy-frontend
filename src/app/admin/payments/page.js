@@ -62,6 +62,16 @@ const PlusIcon = () => (
         <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
 );
+const PhoneIcon = ({ className = "w-3 h-3" }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+);
+const WhatsAppIcon = ({ className = "w-3 h-3" }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.41a8.16 8.16 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.5c-.25-.13-1.47-.72-1.7-.8-.23-.09-.39-.13-.56.13-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.24-.74-.66-1.24-1.47-1.39-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.09-.17.04-.32-.02-.45-.06-.13-.56-1.35-.76-1.85-.2-.49-.4-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1s.9 2.43 1.03 2.6c.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.1-.22-.16-.47-.28z"/>
+    </svg>
+);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const QUICK_FILTERS = [
@@ -518,9 +528,32 @@ function AdminPaymentsContent() {
                                                         style={{ background: `hsl(${(payment.users?.name?.charCodeAt(0) || 65) * 5 % 360}, 60%, 40%)` }}>
                                                         {(payment.users?.name || 'U').charAt(0).toUpperCase()}
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <div className="text-sm font-medium text-white">{payment.users?.name || '—'}</div>
-                                                        <div className="text-xs text-gray-500">{payment.users?.email || '—'}</div>
+                                                        <div className="text-xs text-gray-400 truncate">{payment.users?.email || '—'}</div>
+                                                        {payment.users?.phone ? (
+                                                            <div className="flex items-center gap-1.5 mt-1">
+                                                                <a
+                                                                    href={`tel:${payment.users.phone}`}
+                                                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/20"
+                                                                    title="Direct Call Student"
+                                                                >
+                                                                    <PhoneIcon className="w-2.5 h-2.5 text-emerald-400" />
+                                                                    <span>{payment.users.phone}</span>
+                                                                </a>
+                                                                <a
+                                                                    href={`https://wa.me/${payment.users.phone.replace(/[^0-9]/g, '').length === 10 ? '91' + payment.users.phone.replace(/[^0-9]/g, '') : payment.users.phone.replace(/[^0-9]/g, '')}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center justify-center text-green-400 hover:text-green-300 transition-colors bg-green-500/10 hover:bg-green-500/20 p-1 rounded-md border border-green-500/20"
+                                                                    title="Message on WhatsApp"
+                                                                >
+                                                                    <WhatsAppIcon className="w-3 h-3 text-green-400" />
+                                                                </a>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-[11px] text-gray-600 italic mt-0.5">No phone number</div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
