@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Script from 'next/script';
-import { coursesAPI, paymentAPI, couponAPI } from '@/lib/api';
+import { coursesAPI, paymentAPI, couponAPI, enrollmentAPI } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import useAuthStore from '@/store/authStore';
 import PaymentResultModal from '@/components/ui/PaymentResultModal';
@@ -17,6 +17,7 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
     const [loading, setLoading] = useState(!initialCourse);
     const [purchasing, setPurchasing] = useState(false);
     const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+    const [enrollmentChecked, setEnrollmentChecked] = useState(false);
 
     // Coupon states
     const [couponCode, setCouponCode] = useState('');
@@ -47,6 +48,22 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             fetchCourse();
         }
     }, [courseId]);
+
+    // ✅ Client-side enrollment check — server-side fetch never has auth token
+    // so isEnrolled from SSR is always false. We re-check here when user is known.
+    useEffect(() => {
+        if (isAuthenticated && user && courseId && !enrollmentChecked) {
+            setEnrollmentChecked(true);
+            enrollmentAPI.checkAccess(courseId)
+                .then(res => {
+                    const hasAccess = res?.data?.data?.hasAccess || false;
+                    if (hasAccess) {
+                        setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
+                    }
+                })
+                .catch(() => { /* silent fail — enrollment check is best-effort */ });
+        }
+    }, [isAuthenticated, user, courseId, enrollmentChecked]);
 
     // Timer countdown for redirecting to signup
     useEffect(() => {
@@ -169,22 +186,44 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                         title: 'Verifying Payment',
                         message: 'Please wait while we confirm your payment...',
                     });
+
+                    // Retry verify up to 3 times (handles Render cold-start timeouts)
+                    const verifyWithRetry = async (payload, attemptsLeft = 3) => {
+                        try {
+                            return await paymentAPI.verifyPayment(payload);
+                        } catch (err) {
+                            if (attemptsLeft > 1) {
+                                await new Promise(r => setTimeout(r, 2000));
+                                return verifyWithRetry(payload, attemptsLeft - 1);
+                            }
+                            throw err;
+                        }
+                    };
+
                     try {
-                        await paymentAPI.verifyPayment({
+                        await verifyWithRetry({
                             razorpay_order_id: response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
                         });
-                        // Success!
+                        // ✅ Immediately update local state so UI shows "Go to Course"
+                        setCourse(prev => ({ ...prev, isEnrolled: true }));
+                        setPurchasing(false);
+
+                        // Show success modal with auto-redirect
                         setPaymentModal({
                             type: 'success',
                             title: 'Enrollment Confirmed! 🎉',
-                            message: `You have successfully enrolled in "${course.title}". Start learning now from your dashboard.`,
+                            message: `You have successfully enrolled in "${course.title}". Redirecting to your dashboard...`,
                         });
-                        setPurchasing(false);
+
+                        // Auto-redirect to dashboard after 3 seconds
+                        setTimeout(() => {
+                            router.push('/student/dashboard');
+                        }, 3000);
                     } catch (error) {
                         console.error('Payment verification failed:', error);
-                        const errMsg = error.response?.data?.message || 'Payment verification failed. Please contact support if your amount was deducted.';
+                        const errMsg = error.response?.data?.message || 'Payment verification failed. Your payment may have been captured — please check your dashboard or contact support with your payment ID: ' + response.razorpay_payment_id;
                         setPaymentModal({
                             type: 'error',
                             title: 'Verification Failed',
