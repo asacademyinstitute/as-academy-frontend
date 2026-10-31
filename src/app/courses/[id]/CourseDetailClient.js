@@ -49,19 +49,53 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
         }
     }, [courseId]);
 
-    // ✅ Client-side enrollment check — server-side fetch never has auth token
-    // so isEnrolled from SSR is always false. We re-check here when user is known.
+    // ✅ Client-side enrollment check & mobile payment recovery
+    // If user returns from UPI app (GPay/PhonePe), auto-sync order from gateway
     useEffect(() => {
-        if (isAuthenticated && user && courseId && !enrollmentChecked) {
-            setEnrollmentChecked(true);
-            enrollmentAPI.checkAccess(courseId)
-                .then(res => {
-                    const hasAccess = res?.data?.data?.hasAccess || false;
-                    if (hasAccess) {
-                        setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
-                    }
-                })
-                .catch(() => { /* silent fail — enrollment check is best-effort */ });
+        if (isAuthenticated && user && courseId) {
+            const pendingOrderId = typeof window !== 'undefined' ? sessionStorage.getItem('pending_payment_order_id') : null;
+            const pendingCourseId = typeof window !== 'undefined' ? sessionStorage.getItem('pending_payment_course_id') : null;
+
+            if (pendingOrderId && pendingCourseId === courseId) {
+                setPaymentModal({
+                    type: 'loading',
+                    title: 'Verifying Payment',
+                    message: 'Checking your payment status with the gateway...',
+                });
+                paymentAPI.syncOrder({ orderId: pendingOrderId })
+                    .then(res => {
+                        if (res?.data?.data?.isEnrolled) {
+                            try {
+                                sessionStorage.removeItem('pending_payment_order_id');
+                                sessionStorage.removeItem('pending_payment_course_id');
+                            } catch (e) {}
+                            setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
+                            setPaymentModal({
+                                type: 'success',
+                                title: 'Enrollment Confirmed! 🎉',
+                                message: `You have successfully enrolled in "${course?.title || 'the course'}". Redirecting to your dashboard...`,
+                            });
+                            setTimeout(() => {
+                                router.push('/student/dashboard');
+                            }, 2500);
+                        } else {
+                            closePaymentModal();
+                        }
+                    })
+                    .catch(() => {
+                        closePaymentModal();
+                    });
+            } else if (!enrollmentChecked) {
+                setEnrollmentChecked(true);
+                enrollmentAPI.checkAccess(courseId)
+                    .then(res => {
+                        const hasAccess = res?.data?.data?.hasAccess || false;
+                        if (hasAccess) {
+                            setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
+                        }
+                    })
+                    .catch(() => { /* silent fail — enrollment check is best-effort */ });
+            }
         }
     }, [isAuthenticated, user, courseId, enrollmentChecked]);
 
@@ -169,6 +203,12 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                 throw new Error('Invalid order data received from server');
             }
 
+            // Save order in session storage so we can auto-recover if mobile browser tab is reloaded/switched
+            try {
+                sessionStorage.setItem('pending_payment_order_id', orderId);
+                sessionStorage.setItem('pending_payment_course_id', course.id);
+            } catch (e) {}
+
             // Close loading modal — Razorpay will open
             closePaymentModal();
 
@@ -187,7 +227,7 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                         message: 'Please wait while we confirm your payment...',
                     });
 
-                    // Retry verify up to 3 times (handles Render cold-start timeouts)
+                    // Retry verify up to 3 times (handles Render cold-start timeouts) with syncOrder fallback
                     const verifyWithRetry = async (payload, attemptsLeft = 3) => {
                         try {
                             return await paymentAPI.verifyPayment(payload);
@@ -196,7 +236,8 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                                 await new Promise(r => setTimeout(r, 2000));
                                 return verifyWithRetry(payload, attemptsLeft - 1);
                             }
-                            throw err;
+                            // Fallback to direct gateway sync
+                            return await paymentAPI.syncOrder({ orderId: payload.razorpay_order_id });
                         }
                     };
 
@@ -206,6 +247,12 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                             razorpay_payment_id: response.razorpay_payment_id,
                             razorpay_signature: response.razorpay_signature,
                         });
+
+                        try {
+                            sessionStorage.removeItem('pending_payment_order_id');
+                            sessionStorage.removeItem('pending_payment_course_id');
+                        } catch (e) {}
+
                         // ✅ Immediately update local state so UI shows "Go to Course"
                         setCourse(prev => ({ ...prev, isEnrolled: true }));
                         setPurchasing(false);
@@ -217,10 +264,10 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                             message: `You have successfully enrolled in "${course.title}". Redirecting to your dashboard...`,
                         });
 
-                        // Auto-redirect to dashboard after 3 seconds
+                        // Auto-redirect to dashboard after 2.5 seconds
                         setTimeout(() => {
                             router.push('/student/dashboard');
-                        }, 3000);
+                        }, 2500);
                     } catch (error) {
                         console.error('Payment verification failed:', error);
                         const errMsg = error.response?.data?.message || 'Payment verification failed. Your payment may have been captured — please check your dashboard or contact support with your payment ID: ' + response.razorpay_payment_id;
@@ -233,10 +280,32 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                     }
                 },
                 modal: {
-                    ondismiss: function () {
+                    ondismiss: async function () {
                         setPurchasing(false);
+                        // On mobile UPI (GPay/PhonePe), returning to browser can fire ondismiss
+                        // Check if payment was actually completed in UPI app before showing cancelled toast:
+                        try {
+                            const syncRes = await paymentAPI.syncOrder({ orderId });
+                            if (syncRes?.data?.data?.isEnrolled) {
+                                try {
+                                    sessionStorage.removeItem('pending_payment_order_id');
+                                    sessionStorage.removeItem('pending_payment_course_id');
+                                } catch (e) {}
+                                setCourse(prev => ({ ...prev, isEnrolled: true }));
+                                setPaymentModal({
+                                    type: 'success',
+                                    title: 'Enrollment Confirmed! 🎉',
+                                    message: `Payment successful! You are now enrolled in "${course.title}". Redirecting to your dashboard...`,
+                                });
+                                setTimeout(() => {
+                                    router.push('/student/dashboard');
+                                }, 2500);
+                                return;
+                            }
+                        } catch (e) {}
+
                         closePaymentModal();
-                        showToast('Payment cancelled. You can try again anytime.', 'info', 3500);
+                        showToast('Payment cancelled. If money was deducted, it will auto-sync to your dashboard shortly.', 'info', 4500);
                     }
                 },
                 prefill: {
