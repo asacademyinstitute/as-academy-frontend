@@ -196,7 +196,18 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
         });
 
         try {
-            const orderResponse = await paymentAPI.createOrder(course.id, finalAmount);
+            const orderResponse = await paymentAPI.createOrder(course.id, finalAmount, appliedCoupon?.code);
+
+            // Handle 100% free / direct enrollment
+            if (orderResponse.data?.data?.isFree) {
+                closePaymentModal();
+                showToast('🎉 Course enrolled successfully with 100% discount!', 'success', 5000);
+                setTimeout(() => {
+                    router.push(`/student/courses/${course.id}`);
+                }, 1500);
+                return;
+            }
+
             const { orderId, amount, currency, keyId } = orderResponse.data.data;
 
             if (!orderId || !keyId) {

@@ -119,7 +119,7 @@ export const enrollmentAPI = {
 };
 
 export const paymentAPI = {
-    createOrder: (courseId, amount) => api.post('/payments/create-order', { courseId, amount }),
+    createOrder: (courseId, amount, couponCode = null) => api.post('/payments/create-order', { courseId, amount, couponCode }),
     verifyPayment: (data) => api.post('/payments/verify', data),
     syncOrder: (data) => api.post('/payments/sync-order', data),
     offlineEnroll: (data) => api.post('/payments/offline-enroll', data),
