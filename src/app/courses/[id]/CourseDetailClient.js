@@ -196,7 +196,8 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
         });
 
         try {
-            const orderResponse = await paymentAPI.createOrder(course.id, finalAmount, appliedCoupon?.code);
+            const activeCouponCode = appliedCoupon?.code || couponCode?.trim() || null;
+            const orderResponse = await paymentAPI.createOrder(course.id, finalAmount, activeCouponCode);
 
             // Handle 100% free / direct enrollment
             if (orderResponse.data?.data?.isFree) {
