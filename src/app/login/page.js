@@ -37,9 +37,9 @@ export default function LoginPage() {
         if (error) {
             const lowerMsg = error.toLowerCase();
             const newErrors = { email: '', password: '', general: '' };
-            if (lowerMsg.includes('email')) {
+            if (lowerMsg.includes('email') && !lowerMsg.includes('password')) {
                 newErrors.email = error;
-            } else if (lowerMsg.includes('password')) {
+            } else if (lowerMsg.includes('password') && !lowerMsg.includes('email')) {
                 newErrors.password = error;
             } else {
                 newErrors.general = error;

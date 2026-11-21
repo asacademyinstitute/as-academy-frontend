@@ -232,7 +232,7 @@ export default function SignupPage() {
                                 {fieldErrors.password ? (
                                     <p className="text-xs text-red-500 mt-1.5 font-medium">{fieldErrors.password}</p>
                                 ) : (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Min 8 characters, include uppercase, lowercase, number & special char</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Minimum 8 characters (any letters, numbers, or digits)</p>
                                 )}
                             </div>
 
