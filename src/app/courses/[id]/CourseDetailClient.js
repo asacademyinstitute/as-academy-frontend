@@ -41,6 +41,10 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
         if (typeof window !== 'undefined' && window.Razorpay) {
             setRazorpayLoaded(true);
         }
+        // Pre-warm backend in background so Render server is hot and ready when student clicks Enroll
+        try {
+            fetch('https://as-academy-backend.onrender.com/health', { mode: 'no-cors' }).catch(() => {});
+        } catch (e) {}
     }, []);
 
     useEffect(() => {
@@ -256,7 +260,30 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             const activeCouponCode = currentAppliedCoupon?.code || null;
             const finalAmount = currentAppliedCoupon ? currentAppliedCoupon.final_amount : course.price;
 
-            const orderResponse = await paymentAPI.createOrder(course.id, finalAmount, activeCouponCode);
+            // Create order with retry (handles Render cold-start timeouts and network hiccups)
+            let orderResponse = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    if (attempt > 1) {
+                        setPaymentModal({
+                            type: 'loading',
+                            title: 'Connecting to Payment Gateway',
+                            message: `Payment server is waking up, establishing secure connection (attempt ${attempt}/3)...`,
+                        });
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                    orderResponse = await paymentAPI.createOrder(course.id, finalAmount, activeCouponCode);
+                    if (orderResponse?.data?.data) break;
+                } catch (err) {
+                    console.warn(`createOrder attempt ${attempt} failed:`, err.message);
+                    const status = err.response?.status;
+                    // Only retry on cold-start errors (network error, timeout, 502, 503, 504)
+                    const isRetryable = !status || status >= 500 || err.code === 'ECONNABORTED' || err.message?.includes('timeout') || err.message?.includes('Network Error');
+                    if (!isRetryable || attempt === 3) {
+                        throw err;
+                    }
+                }
+            }
 
             // Handle 100% free / direct enrollment
             if (orderResponse.data?.data?.isFree) {
