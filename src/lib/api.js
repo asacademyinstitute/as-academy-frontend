@@ -147,6 +147,8 @@ export const enrollmentAPI = {
     deleteEnrollment: (enrollmentId) => api.delete(`/enrollments/${enrollmentId}`),
     unblockEnrollment: (enrollmentId) => api.post(`/enrollments/${enrollmentId}/unblock`),
     adminEnroll: (data) => api.post('/enrollments/admin-enroll', data),
+    getAllCourseCounts: () => api.get('/enrollments/counts/all'),
+    exportAll: () => api.get('/enrollments/export/all'),
 };
 
 export const paymentAPI = {
