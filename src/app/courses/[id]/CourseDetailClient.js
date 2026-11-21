@@ -228,7 +228,6 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             return;
         }
 
-        const finalAmount = appliedCoupon ? appliedCoupon.final_amount : course.price;
         setPurchasing(true);
 
         // Show loading modal
@@ -239,7 +238,24 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
         });
 
         try {
-            const activeCouponCode = appliedCoupon?.code || couponCode?.trim() || null;
+            // Auto-validate coupon if user entered one in the input but forgot to click "Apply"
+            let currentAppliedCoupon = appliedCoupon;
+            if (!currentAppliedCoupon && couponCode && couponCode.trim()) {
+                try {
+                    const response = await couponAPI.validate(couponCode.trim(), course.id);
+                    currentAppliedCoupon = response.data?.data;
+                    if (currentAppliedCoupon) {
+                        setAppliedCoupon(currentAppliedCoupon);
+                        setCouponSuccess(`Coupon applied! Saved ${formatCurrency(currentAppliedCoupon.discount_amount)}`);
+                    }
+                } catch (err) {
+                    console.warn('Auto coupon validation failed:', err);
+                }
+            }
+
+            const activeCouponCode = currentAppliedCoupon?.code || null;
+            const finalAmount = currentAppliedCoupon ? currentAppliedCoupon.final_amount : course.price;
+
             const orderResponse = await paymentAPI.createOrder(course.id, finalAmount, activeCouponCode);
 
             // Handle 100% free / direct enrollment
