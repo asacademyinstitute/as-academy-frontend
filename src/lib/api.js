@@ -31,6 +31,14 @@ api.interceptors.request.use(
 );
 
 // Response interceptor - handle token refresh
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+const onRefreshed = (token) => {
+    refreshSubscribers.forEach(cb => cb(token));
+    refreshSubscribers = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -49,9 +57,22 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
+            // If already refreshing, queue this request
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    refreshSubscribers.push((token) => {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                        resolve(api(originalRequest));
+                    });
+                });
+            }
+
+            isRefreshing = true;
+
             try {
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (!refreshToken) {
+                    isRefreshing = false;
                     throw new Error('No refresh token');
                 }
 
@@ -60,18 +81,28 @@ api.interceptors.response.use(
                     refreshToken,
                 });
 
+                const newToken = data.data.accessToken;
                 // Save new access token
-                localStorage.setItem('accessToken', data.data.accessToken);
+                localStorage.setItem('accessToken', newToken);
+
+                isRefreshing = false;
+                onRefreshed(newToken);
 
                 // Retry original request with new token
-                originalRequest.headers.Authorization = `Bearer ${data.data.accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
                 return api(originalRequest);
             } catch (refreshError) {
-                // Refresh failed, logout user
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
+                isRefreshing = false;
+                refreshSubscribers = [];
+                // Refresh failed — only redirect if NOT in a payment flow
+                // (avoid losing pending payment data by redirecting mid-checkout)
+                const isPaymentRequest = originalRequest.url?.includes('/payments/');
+                if (!isPaymentRequest) {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             }
         }

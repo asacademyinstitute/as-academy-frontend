@@ -260,28 +260,37 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             const activeCouponCode = currentAppliedCoupon?.code || null;
             const finalAmount = currentAppliedCoupon ? currentAppliedCoupon.final_amount : course.price;
 
-            // Create order with retry (handles Render cold-start timeouts and network hiccups)
+            // Create order with retry (handles Render cold-start timeouts, network hiccups, token refresh)
             let orderResponse = null;
-            for (let attempt = 1; attempt <= 3; attempt++) {
+            for (let attempt = 1; attempt <= 4; attempt++) {
                 try {
                     if (attempt > 1) {
                         setPaymentModal({
                             type: 'loading',
                             title: 'Connecting to Payment Gateway',
-                            message: `Payment server is waking up, establishing secure connection (attempt ${attempt}/3)...`,
+                            message: attempt <= 2
+                                ? `Refreshing session, retrying... (${attempt}/4)`
+                                : `Payment server is waking up... (attempt ${attempt}/4)`,
                         });
-                        await new Promise(r => setTimeout(r, 2000));
+                        await new Promise(r => setTimeout(r, attempt === 2 ? 1500 : 2500));
                     }
                     orderResponse = await paymentAPI.createOrder(course.id, finalAmount, activeCouponCode);
                     if (orderResponse?.data?.data) break;
                 } catch (err) {
-                    console.warn(`createOrder attempt ${attempt} failed:`, err.message);
+                    console.warn(`createOrder attempt ${attempt} failed:`, err.message, 'status:', err.response?.status);
                     const status = err.response?.status;
-                    // Only retry on cold-start errors (network error, timeout, 502, 503, 504)
-                    const isRetryable = !status || status >= 500 || err.code === 'ECONNABORTED' || err.message?.includes('timeout') || err.message?.includes('Network Error');
-                    if (!isRetryable || attempt === 3) {
+                    const errMsg = err.response?.data?.message || err.message || '';
+                    // Don't retry on definitive business errors
+                    const isDefinitiveError = status === 400 || status === 404 ||
+                        errMsg.includes('already enrolled') ||
+                        errMsg.includes('already used') ||
+                        errMsg.includes('usage limit') ||
+                        errMsg.includes('Price mismatch');
+                    if (isDefinitiveError || attempt === 4) {
                         throw err;
                     }
+                    // Retry on network/server/auth errors (401 = token refresh needed, handled by interceptor)
+                    // 500/502/503/504 = server error, timeout, network error — all retryable
                 }
             }
 
@@ -455,11 +464,30 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             razorpay.open();
         } catch (error) {
             console.error('Error creating order:', error);
-            const errMsg = error.response?.data?.message || error.message || 'Could not create payment order. Please try again.';
+            const status = error.response?.status;
+            const serverMsg = error.response?.data?.message || '';
+            let userMsg = '';
+
+            if (serverMsg.includes('already enrolled')) {
+                userMsg = 'You are already enrolled in this course! Go to your dashboard to access it.';
+            } else if (serverMsg.includes('already used') || serverMsg.includes('usage limit')) {
+                userMsg = serverMsg; // Show exact coupon error
+            } else if (serverMsg.includes('Price mismatch')) {
+                userMsg = 'Price mismatch detected. Please refresh the page and try again.';
+            } else if (status === 401) {
+                userMsg = 'Session expired. Please log in again and retry.';
+            } else if (status === 404) {
+                userMsg = 'Course not found. Please refresh and try again.';
+            } else if (!status || status >= 500 || error.message?.includes('timeout') || error.message?.includes('Network')) {
+                userMsg = 'Payment server is temporarily unavailable. Please wait 10 seconds and click "Try Again".';
+            } else {
+                userMsg = serverMsg || error.message || 'Could not create payment order. Please try again.';
+            }
+
             setPaymentModal({
                 type: 'error',
                 title: 'Order Creation Failed',
-                message: errMsg,
+                message: userMsg,
             });
             setPurchasing(false);
         }
