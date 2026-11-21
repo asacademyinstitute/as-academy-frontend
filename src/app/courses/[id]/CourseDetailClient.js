@@ -51,40 +51,59 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
 
     // ✅ Client-side enrollment check & mobile payment recovery
     // If user returns from UPI app (GPay/PhonePe), auto-sync order from gateway
+    const recoverPendingPayment = async (orderIdToCheck) => {
+        if (!orderIdToCheck) return false;
+        try {
+            setPaymentModal({
+                type: 'loading',
+                title: 'Verifying Payment',
+                message: 'Checking your payment status with the gateway...',
+            });
+
+            // Poll up to 3 times (with 2s delay) to allow bank/UPI webhook confirmation
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                const res = await paymentAPI.syncOrder({ orderId: orderIdToCheck });
+                if (res?.data?.data?.isEnrolled) {
+                    try {
+                        localStorage.removeItem('pending_payment_order_id');
+                        localStorage.removeItem('pending_payment_course_id');
+                        sessionStorage.removeItem('pending_payment_order_id');
+                        sessionStorage.removeItem('pending_payment_course_id');
+                    } catch (e) {}
+                    setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
+                    setPaymentModal({
+                        type: 'success',
+                        title: 'Enrollment Confirmed! 🎉',
+                        message: `You have successfully enrolled in "${course?.title || 'the course'}". Redirecting to your dashboard...`,
+                    });
+                    setTimeout(() => {
+                        router.push('/student/dashboard');
+                    }, 2500);
+                    return true;
+                }
+                if (attempt < 3) {
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+            closePaymentModal();
+            return false;
+        } catch (e) {
+            closePaymentModal();
+            return false;
+        }
+    };
+
     useEffect(() => {
         if (isAuthenticated && user && courseId) {
-            const pendingOrderId = typeof window !== 'undefined' ? sessionStorage.getItem('pending_payment_order_id') : null;
-            const pendingCourseId = typeof window !== 'undefined' ? sessionStorage.getItem('pending_payment_course_id') : null;
+            const pendingOrderId = typeof window !== 'undefined' 
+                ? (localStorage.getItem('pending_payment_order_id') || sessionStorage.getItem('pending_payment_order_id')) 
+                : null;
+            const pendingCourseId = typeof window !== 'undefined' 
+                ? (localStorage.getItem('pending_payment_course_id') || sessionStorage.getItem('pending_payment_course_id')) 
+                : null;
 
             if (pendingOrderId && pendingCourseId === courseId) {
-                setPaymentModal({
-                    type: 'loading',
-                    title: 'Verifying Payment',
-                    message: 'Checking your payment status with the gateway...',
-                });
-                paymentAPI.syncOrder({ orderId: pendingOrderId })
-                    .then(res => {
-                        if (res?.data?.data?.isEnrolled) {
-                            try {
-                                sessionStorage.removeItem('pending_payment_order_id');
-                                sessionStorage.removeItem('pending_payment_course_id');
-                            } catch (e) {}
-                            setCourse(prev => prev ? { ...prev, isEnrolled: true } : prev);
-                            setPaymentModal({
-                                type: 'success',
-                                title: 'Enrollment Confirmed! 🎉',
-                                message: `You have successfully enrolled in "${course?.title || 'the course'}". Redirecting to your dashboard...`,
-                            });
-                            setTimeout(() => {
-                                router.push('/student/dashboard');
-                            }, 2500);
-                        } else {
-                            closePaymentModal();
-                        }
-                    })
-                    .catch(() => {
-                        closePaymentModal();
-                    });
+                recoverPendingPayment(pendingOrderId);
             } else if (!enrollmentChecked) {
                 setEnrollmentChecked(true);
                 enrollmentAPI.checkAccess(courseId)
@@ -98,6 +117,30 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
             }
         }
     }, [isAuthenticated, user, courseId, enrollmentChecked]);
+
+    // Listen for tab focus / app switch back from UPI apps (PhonePe, GPay, Paytm)
+    useEffect(() => {
+        const handleVisibilityOrFocus = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible' && isAuthenticated && user && courseId) {
+                const pendingOrderId = (typeof window !== 'undefined' ? (localStorage.getItem('pending_payment_order_id') || sessionStorage.getItem('pending_payment_order_id')) : null);
+                const pendingCourseId = (typeof window !== 'undefined' ? (localStorage.getItem('pending_payment_course_id') || sessionStorage.getItem('pending_payment_course_id')) : null);
+                if (pendingOrderId && pendingCourseId === courseId && !course?.isEnrolled) {
+                    recoverPendingPayment(pendingOrderId);
+                }
+            }
+        };
+
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+            window.addEventListener('focus', handleVisibilityOrFocus);
+        }
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+                window.removeEventListener('focus', handleVisibilityOrFocus);
+            }
+        };
+    }, [isAuthenticated, user, courseId, course?.isEnrolled]);
 
     // Timer countdown for redirecting to signup
     useEffect(() => {
@@ -215,8 +258,10 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                 throw new Error('Invalid order data received from server');
             }
 
-            // Save order in session storage so we can auto-recover if mobile browser tab is reloaded/switched
+            // Save order in both localStorage & sessionStorage so it survives mobile browser app switches/reloads
             try {
+                localStorage.setItem('pending_payment_order_id', orderId);
+                localStorage.setItem('pending_payment_course_id', course.id);
                 sessionStorage.setItem('pending_payment_order_id', orderId);
                 sessionStorage.setItem('pending_payment_course_id', course.id);
             } catch (e) {}
@@ -261,6 +306,8 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                         });
 
                         try {
+                            localStorage.removeItem('pending_payment_order_id');
+                            localStorage.removeItem('pending_payment_course_id');
                             sessionStorage.removeItem('pending_payment_order_id');
                             sessionStorage.removeItem('pending_payment_course_id');
                         } catch (e) {}
@@ -292,33 +339,54 @@ export default function CourseDetailClient({ courseId, initialCourse }) {
                     }
                 },
                 modal: {
+                    confirm_close: true, // Prevents accidental closing on mobile
                     ondismiss: async function () {
                         setPurchasing(false);
                         // On mobile UPI (GPay/PhonePe), returning to browser can fire ondismiss
-                        // Check if payment was actually completed in UPI app before showing cancelled toast:
+                        // Check if payment was actually completed in UPI app before declaring cancelled:
+                        setPaymentModal({
+                            type: 'loading',
+                            title: 'Checking Payment Confirmation',
+                            message: 'Verifying if your payment was completed with your bank...',
+                        });
+
+                        let enrolled = false;
                         try {
-                            const syncRes = await paymentAPI.syncOrder({ orderId });
-                            if (syncRes?.data?.data?.isEnrolled) {
-                                try {
-                                    sessionStorage.removeItem('pending_payment_order_id');
-                                    sessionStorage.removeItem('pending_payment_course_id');
-                                } catch (e) {}
-                                setCourse(prev => ({ ...prev, isEnrolled: true }));
-                                setPaymentModal({
-                                    type: 'success',
-                                    title: 'Enrollment Confirmed! 🎉',
-                                    message: `Payment successful! You are now enrolled in "${course.title}". Redirecting to your dashboard...`,
-                                });
-                                setTimeout(() => {
-                                    router.push('/student/dashboard');
-                                }, 2500);
-                                return;
+                            // Poll syncOrder twice with 2.5s delay to allow gateway to catch up
+                            for (let i = 0; i < 2; i++) {
+                                const syncRes = await paymentAPI.syncOrder({ orderId });
+                                if (syncRes?.data?.data?.isEnrolled) {
+                                    enrolled = true;
+                                    try {
+                                        localStorage.removeItem('pending_payment_order_id');
+                                        localStorage.removeItem('pending_payment_course_id');
+                                        sessionStorage.removeItem('pending_payment_order_id');
+                                        sessionStorage.removeItem('pending_payment_course_id');
+                                    } catch (e) {}
+                                    setCourse(prev => ({ ...prev, isEnrolled: true }));
+                                    setPaymentModal({
+                                        type: 'success',
+                                        title: 'Enrollment Confirmed! 🎉',
+                                        message: `Payment successful! You are now enrolled in "${course.title}". Redirecting to your dashboard...`,
+                                    });
+                                    setTimeout(() => {
+                                        router.push('/student/dashboard');
+                                    }, 2500);
+                                    return;
+                                }
+                                if (i === 0) await new Promise(r => setTimeout(r, 2500));
                             }
                         } catch (e) {}
 
-                        closePaymentModal();
-                        showToast('Payment cancelled. If money was deducted, it will auto-sync to your dashboard shortly.', 'info', 4500);
+                        if (!enrolled) {
+                            closePaymentModal();
+                            showToast('If money was deducted from your UPI/bank, don\'t worry! It will automatically sync to your dashboard in 1-2 minutes.', 'info', 6000);
+                        }
                     }
+                },
+                retry: {
+                    enabled: true,
+                    max_count: 3
                 },
                 prefill: {
                     name: user?.name || '',

@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { enrollmentAPI, userAPI } from '@/lib/api';
+import { enrollmentAPI, userAPI, paymentAPI } from '@/lib/api';
 import useAuthStore from '@/store/authStore';
 import { formatDate, safeParseDate } from '@/lib/utils';
 import { DashboardNav } from '@/components/ui/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BookOpen, Award, User, ShoppingBag } from 'lucide-react';
+import { showToast } from '@/components/ui/toast';
 
 function StudentDashboardContent() {
     const router = useRouter();
@@ -24,6 +25,27 @@ function StudentDashboardContent() {
     useEffect(() => {
         if (user) {
             fetchData();
+
+            // Self-healing: Check if user just completed a payment (especially on mobile UPI)
+            if (typeof window !== 'undefined') {
+                const pendingOrderId = localStorage.getItem('pending_payment_order_id') || sessionStorage.getItem('pending_payment_order_id');
+                if (pendingOrderId) {
+                    paymentAPI.syncOrder({ orderId: pendingOrderId })
+                        .then(res => {
+                            if (res?.data?.data?.isEnrolled) {
+                                try {
+                                    localStorage.removeItem('pending_payment_order_id');
+                                    localStorage.removeItem('pending_payment_course_id');
+                                    sessionStorage.removeItem('pending_payment_order_id');
+                                    sessionStorage.removeItem('pending_payment_course_id');
+                                } catch (e) {}
+                                showToast('🎉 Payment confirmed! Your course is active.', 'success', 5000);
+                                fetchData();
+                            }
+                        })
+                        .catch(() => {});
+                }
+            }
         }
     }, [user]);
 
